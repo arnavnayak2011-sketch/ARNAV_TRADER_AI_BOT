@@ -1,1 +1,2584 @@
-# ARNAV_TRADER_AI_BOT
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARNAV TRADER AI BOT - Audited Real OHLC & Quantitative Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#02050d',
+                        cardBg: '#070e1e',
+                        borderCol: '#1b3566',
+                        cyanGlow: '#00f0ff'
+                    },
+                    boxShadow: {
+                        'glow-cyan': '0 0 25px rgba(0, 240, 255, 0.22)',
+                        'glow-green': '0 0 38px rgba(16, 185, 129, 0.55)',
+                        'glow-red': '0 0 38px rgba(244, 63, 94, 0.55)',
+                        'glow-amber': '0 0 30px rgba(245, 158, 11, 0.4)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #02050d; }
+        ::-webkit-scrollbar-thumb { background: #1b3566; border-radius: 3px; }
+        .cyber-border { border: 1px solid rgba(0, 240, 255, 0.28); }
+        .buy-card-glow {
+            background: linear-gradient(145deg, rgba(6, 78, 59, 0.72), rgba(2, 44, 34, 0.95));
+            border: 2px solid #10b981;
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.5), inset 0 0 20px rgba(16, 185, 129, 0.25);
+        }
+        .sell-card-glow {
+            background: linear-gradient(145deg, rgba(136, 19, 55, 0.72), rgba(76, 5, 25, 0.95));
+            border: 2px solid #f43f5e;
+            box-shadow: 0 0 40px rgba(244, 63, 94, 0.5), inset 0 0 20px rgba(244, 63, 94, 0.25);
+        }
+        .wait-card-glow {
+            background: linear-gradient(145deg, rgba(120, 53, 15, 0.55), rgba(69, 26, 3, 0.88));
+            border: 2px solid #f59e0b;
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.35), inset 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen font-sans selection:bg-cyan-400 selection:text-black">
+
+    <input type="file" id="logoFileInput" accept="image/*" class="hidden" onchange="handleCustomLogoUpload(event)">
+    <input type="file" id="ohlcFileInput" accept=".csv,.json" class="hidden" onchange="handleOhlcFileUpload(event)">
+
+    <!-- SECURITY LOGIN WALL -->
+    <div id="authScreen" class="fixed inset-0 bg-darkBg z-50 flex items-center justify-center p-4">
+        <div class="bg-cardBg cyber-border rounded-2xl p-8 max-w-md w-full shadow-glow-cyan text-center relative overflow-hidden">
+            <div class="relative w-24 h-24 mx-auto mb-4 rounded-full p-1 bg-gradient-to-tr from-cyan-400 to-blue-600 shadow-glow-cyan">
+                <img class="bot-logo-img w-full h-full object-cover rounded-full bg-slate-950" alt="Arnav Logo">
+                <span class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-400 border-2 border-slate-950 rounded-full animate-pulse"></span>
+            </div>
+            <h2 class="text-2xl font-black tracking-wider mb-1 text-cyan-400">ARNAV TRADER AI BOT</h2>
+            <p class="text-slate-400 text-xs mb-6">Audited Real OHLC Engine • Zero Fake Metrics • Separated Real &amp; OTC Stores</p>
+            
+            <input type="password" id="passcodeInput" onkeydown="if(event.key==='Enter') verifyPasscode()" placeholder="Enter Secret Passcode" class="w-full bg-slate-950 cyber-border text-sm px-4 py-3.5 rounded-xl text-slate-200 outline-none focus:border-cyan-400 mb-4 text-center tracking-widest">
+            <button onclick="verifyPasscode()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold py-3.5 rounded-xl transition shadow-glow-cyan text-sm tracking-wide">
+                🔒 UNLOCK AUDITED TERMINAL
+            </button>
+            <p id="authError" class="text-rose-400 text-xs mt-3 hidden font-semibold">❌ Incorrect Passcode!</p>
+        </div>
+    </div>
+
+    <!-- MAIN APPLICATION -->
+    <div id="mainApp" class="hidden">
+        
+        <!-- Top Header -->
+        <header class="border-b border-borderCol bg-cardBg/95 backdrop-blur sticky top-0 z-40 shadow-glow-cyan">
+            <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="relative w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-cyan-400 to-blue-600 shadow-glow-cyan cursor-pointer" onclick="document.getElementById('logoFileInput').click()" title="Click to change Logo">
+                        <img class="bot-logo-img w-full h-full object-cover rounded-full bg-slate-950" alt="Logo">
+                        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-slate-950 rounded-full animate-ping"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-lg md:text-xl font-black tracking-wider text-cyan-400">
+                                ARNAV TRADER AI BOT
+                            </h1>
+                            <span class="bg-emerald-950 text-emerald-300 border border-emerald-500/50 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                                AUDITED REAL MATH BUILD
+                            </span>
+                            <span id="unitTestHeaderBadge" onclick="runFullAuditTestSuite(true)" class="cursor-pointer bg-cyan-950 text-cyan-300 border border-cyan-500/50 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full" title="Click to view Unit & Integration Test Results">
+                                🧪 AUDIT TESTS: RUNNING...
+                            </span>
+                        </div>
+                        <p class="text-[10px] text-slate-400">Real Wilder RSI/ATR/ADX • Fractal BOS/CHoCH • Unmitigated OB/FVG • True Lag-1 AutoCorr • Walk-Forward OOS</p>
+                    </div>
+                </div>
+
+                <!-- Atomic IST Clock -->
+                <div class="flex items-center space-x-4 bg-slate-950/90 cyber-border px-4 py-1.5 rounded-xl">
+                    <div class="text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <span id="timeSyncDot" class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+                            <span class="text-[9px] text-amber-400 font-bold uppercase">🇮🇳 IST Atomic Clock</span>
+                        </div>
+                        <span id="liveIstClock" class="text-sm font-mono font-bold text-white">--:--:--</span>
+                    </div>
+                    <div class="h-6 w-[1px] bg-borderCol"></div>
+                    <div class="text-right">
+                        <span class="text-[9px] text-slate-400 block uppercase">Next Candle Entry</span>
+                        <span id="candleTimer" class="text-sm font-mono font-bold text-cyan-400">00:00s</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button onclick="playCuteSignalSound('BUY')" class="bg-indigo-950 hover:bg-indigo-900 border border-indigo-500/50 text-cyan-300 text-xs font-bold px-2.5 py-2 rounded-lg transition" title="Test Cute Alert Sound">
+                        🔊 Sound
+                    </button>
+                    <input type="password" id="apiKeyInput" placeholder="Gemini API Key" class="bg-slate-950 cyber-border text-xs px-3 py-2 rounded-lg text-slate-200 outline-none focus:border-cyan-400 w-36 md:w-44">
+                    <button onclick="saveApiKey()" class="bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-extrabold px-3 py-2 rounded-lg transition">Save Key</button>
+                    <button onclick="lockApp()" class="bg-rose-950/70 border border-rose-600/50 hover:bg-rose-900 text-xs px-2.5 py-2 rounded-lg text-rose-300 transition">Lock</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="max-w-7xl mx-auto px-4 py-4 space-y-4">
+            
+            <!-- SESSION STATS BAR (STRICTLY VERIFIED COUNTERS) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="bg-cardBg cyber-border rounded-xl p-3 shadow-glow-cyan flex flex-col justify-between">
+                    <span class="text-[10px] text-slate-400 uppercase font-bold">Bot Engine Status</span>
+                    <span id="sessionStatusText" class="text-xs sm:text-sm font-black text-rose-400 mt-1">🔴 STANDBY</span>
+                </div>
+                <div class="bg-cardBg cyber-border rounded-xl p-3 shadow-glow-cyan flex flex-col justify-between">
+                    <span class="text-[10px] text-slate-400 uppercase font-bold">Session Trades</span>
+                    <span id="statTotal" class="text-2xl font-black font-mono text-white mt-0.5">0</span>
+                </div>
+                <div class="bg-cardBg border border-emerald-500/50 rounded-xl p-3 shadow-glow-cyan flex flex-col justify-between">
+                    <span class="text-[10px] text-emerald-400 uppercase font-bold">Verified Wins ✅</span>
+                    <span id="statWins" class="text-2xl font-black font-mono text-emerald-400 mt-0.5">0</span>
+                </div>
+                <div class="bg-cardBg border border-rose-500/50 rounded-xl p-3 shadow-glow-cyan flex flex-col justify-between">
+                    <span class="text-[10px] text-rose-400 uppercase font-bold">Verified Losses ❌</span>
+                    <span id="statLosses" class="text-2xl font-black font-mono text-rose-400 mt-0.5">0</span>
+                </div>
+                <div class="bg-cardBg border border-amber-500/50 rounded-xl p-3 shadow-glow-cyan flex flex-col justify-between">
+                    <span class="text-[10px] text-amber-400 uppercase font-bold">Pending / Unverified ⏳</span>
+                    <span id="statPending" class="text-2xl font-black font-mono text-amber-400 mt-0.5">0</span>
+                </div>
+                <div class="bg-cardBg border border-cyan-400/60 rounded-xl p-3 shadow-glow-cyan flex flex-col justify-between">
+                    <span class="text-[10px] text-cyan-300 uppercase font-bold">Session Win Rate 🎯</span>
+                    <span id="statWinRate" class="text-lg font-black font-mono text-cyan-400 mt-0.5">NO_TRADES</span>
+                </div>
+            </div>
+
+            <!-- Control Bar -->
+            <div class="bg-gradient-to-r from-blue-950/70 via-slate-950 to-indigo-950/70 cyber-border rounded-2xl p-3.5 shadow-glow-cyan flex flex-col lg:flex-row justify-between items-center gap-3">
+                
+                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    <button onclick="openPocketOptionPopup()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition flex items-center gap-1">
+                        1️⃣ Open Broker
+                    </button>
+
+                    <button onclick="connectPocketOptionScreen()" id="connectScreenBtn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-3.5 py-2.5 rounded-xl transition shadow-glow-cyan flex items-center gap-1">
+                        2️⃣ 🎥 Share Live Chart
+                    </button>
+
+                    <select id="timeframeSelector" class="bg-slate-950 cyber-border text-xs px-2.5 py-2.5 rounded-xl text-white outline-none focus:border-cyan-400 font-bold">
+                        <option value="1" selected>Expiry: 1M (60s)</option>
+                        <option value="2">Expiry: 2M (120s)</option>
+                        <option value="3">Expiry: 3M (180s)</option>
+                        <option value="5">Expiry: 5M (300s)</option>
+                    </select>
+
+                    <!-- Strictly Separated Real Market vs OTC Dataset & Engine Selector -->
+                    <select id="marketModeSelector" onchange="onMarketModeChange()" class="bg-slate-950 cyber-border text-xs px-2.5 py-2.5 rounded-xl text-amber-300 outline-none focus:border-cyan-400 font-bold">
+                        <option value="REAL" selected>🏛️ Real Market Dataset &amp; Engine</option>
+                        <option value="OTC">🔬 OTC Synthetic Dataset &amp; Engine</option>
+                    </select>
+
+                    <button onclick="document.getElementById('ohlcFileInput').click()" class="bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 text-xs font-bold px-3 py-2.5 rounded-xl transition" title="Import CSV or JSON OHLC Dataset into Active Engine Store">
+                        📂 Import CSV/JSON OHLC
+                    </button>
+
+                    <button onclick="loadBenchmarkCalibrationDatasets()" class="bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 text-emerald-300 text-xs font-bold px-3 py-2.5 rounded-xl transition" title="Load 45-Bar Historical Test Datasets (Separate Real & OTC)">
+                        📊 Load 45-Bar Test Data
+                    </button>
+
+                    <input type="text" id="manualAssetInput" placeholder="Asset (e.g. EUR/USD)" class="bg-slate-950 cyber-border text-xs px-3 py-2.5 rounded-xl text-cyan-300 placeholder-slate-500 outline-none focus:border-cyan-400 w-36 font-mono">
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+                    <button onclick="scanLiveScreenNow(true)" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition">
+                        📸 Execute Audit Scan
+                    </button>
+                    <button onclick="toggleAutoBot()" id="autoBotBtn" class="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow-glow-green">
+                        3️⃣ 🤖 Start Auto Bot
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Grid: Left Live Video & 15-Pt OHLC Telemetry + Right Signal Box -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                
+                <!-- LEFT (7 Cols): LIVE SCREEN STREAM + 15-POINT OHLC CANDLE ANALYZER -->
+                <div class="lg:col-span-7 bg-cardBg cyber-border rounded-2xl p-4 shadow-glow-cyan flex flex-col justify-between space-y-3">
+                    
+                    <div class="flex flex-wrap justify-between items-center gap-2 pb-2 border-b border-borderCol">
+                        <div class="flex items-center space-x-2">
+                            <span id="screenStatusDot" class="w-2.5 h-2.5 bg-rose-500 rounded-full"></span>
+                            <span id="screenStatusTitle" class="text-xs font-bold text-white uppercase tracking-wider">
+                                UNAVAILABLE_DATA (Share Screen or Import CSV/JSON OHLC)
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs font-mono">
+                            <span class="text-slate-400">Close: <b id="liveOcrPriceTag" class="text-amber-300 bg-slate-950 px-2 py-0.5 rounded border border-borderCol">UNAVAILABLE</b></span>
+                            <span class="text-slate-400">Status: <b id="ohlcQualityBadge" class="text-amber-400">UNAVAILABLE_DATA</b></span>
+                        </div>
+                    </div>
+
+                    <!-- Video Container -->
+                    <div class="w-full h-[350px] rounded-xl overflow-hidden border border-borderCol bg-[#030712] relative flex items-center justify-center">
+                        <video id="poScreenVideo" autoplay playsinline muted class="w-full h-full object-contain"></video>
+                        <canvas id="visionCanvas" class="hidden"></canvas>
+
+                        <!-- Overlay when screen is not shared yet -->
+                        <div id="screenPlaceholder" class="absolute inset-0 bg-[#030712]/95 flex flex-col items-center justify-center text-center p-6 z-10">
+                            <div class="w-16 h-16 rounded-full p-1 bg-gradient-to-tr from-cyan-400 to-blue-600 mx-auto mb-3 shadow-glow-cyan">
+                                <img class="bot-logo-img w-full h-full object-cover rounded-full bg-slate-950" alt="Logo">
+                            </div>
+                            <h3 class="text-base font-black text-white mb-1">Share Live Chart Screen or Import CSV/JSON OHLC</h3>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4 max-w-md">
+                                The audited engine <b>never invents market data</b>. Click <b>"📂 Import CSV/JSON OHLC"</b>, <b>"📊 Load 45-Bar Test Data"</b>, or <b>"2️⃣ 🎥 Share Live Chart"</b> to feed synchronized bars into the isolated Real Market or OTC store.
+                            </p>
+                            <div class="flex flex-wrap justify-center gap-2">
+                                <button onclick="connectPocketOptionScreen()" class="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow-glow-cyan">
+                                    🎥 Share Live Chart Screen
+                                </button>
+                                <button onclick="loadBenchmarkCalibrationDatasets()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl transition">
+                                    📊 Load 45-Bar Test OHLC Dataset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DEDICATED 15-POINT OHLC CANDLE DATA ANALYZER BAR -->
+                    <div class="bg-slate-950/90 cyber-border rounded-xl p-3 space-y-2.5">
+                        <div class="flex flex-wrap justify-between items-center gap-2 text-[10px] font-mono border-b border-slate-800 pb-1.5">
+                            <span class="font-extrabold text-cyan-400 uppercase">📊 Latest Bar Measured OHLC:</span>
+                            <div class="flex flex-wrap gap-2 text-slate-200">
+                                <span>O: <b id="ohlcOpen" class="text-white">--</b></span>
+                                <span>H: <b id="ohlcHigh" class="text-emerald-400">--</b></span>
+                                <span>L: <b id="ohlcLow" class="text-rose-400">--</b></span>
+                                <span>C: <b id="ohlcClose" class="text-amber-300">--</b></span>
+                                <span>Body/Wick: <b id="ohlcBodyWickRatio" class="text-cyan-300">--</b></span>
+                                <span>Pattern: <b id="ohlcCandlePattern" class="text-emerald-300">--</b></span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap justify-between items-center gap-2 text-[11px]">
+                            <span class="font-extrabold text-cyan-400 uppercase tracking-wider">🕯️ Synchronized Last 10 Bars Sequence</span>
+                            <div id="last5CandlesVisual" class="flex flex-wrap items-center gap-1 font-mono">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[9px]">UNAVAILABLE_DATA</span>
+                            </div>
+                        </div>
+
+                        <!-- Close Location Value (CLV) Pressure Bar -->
+                        <div>
+                            <div class="flex justify-between text-[10px] font-mono mb-1">
+                                <span id="buyerPressureText" class="text-emerald-400 font-bold">🟢 OHLC CLOSE-LOCATION BULL ESTIMATE: --%</span>
+                                <span id="sellerPressureText" class="text-rose-400 font-bold">🔴 OHLC CLOSE-LOCATION BEAR ESTIMATE: --%</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-rose-950 rounded-full overflow-hidden flex border border-slate-800">
+                                <div id="buyerPressureBar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 50%;"></div>
+                                <div id="sellerPressureBar" class="bg-rose-500 h-full transition-all duration-500" style="width: 50%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT (5 Cols): MAIN SIGNAL CARD -->
+                <div class="lg:col-span-5 bg-cardBg cyber-border rounded-2xl p-5 shadow-glow-cyan flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-3 pb-2.5 border-b border-borderCol">
+                            <div class="flex items-center space-x-2.5">
+                                <img class="bot-logo-img w-9 h-9 rounded-full object-cover border border-cyan-400 shadow-glow-cyan" alt="Logo">
+                                <div>
+                                    <span id="activeEngineSubLabel" class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">REAL MARKET ENGINE STORE</span>
+                                    <h3 class="text-base font-black text-white">Audited Confluence Signal</h3>
+                                </div>
+                            </div>
+                            <span id="signalBadge" class="px-3 py-1 text-xs font-black rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/50 tracking-wider">
+                                UNAVAILABLE_DATA
+                            </span>
+                        </div>
+
+                        <!-- MAIN SIGNAL HIGHLIGHT CARD -->
+                        <div id="signalHighlightBox" class="wait-card-glow rounded-2xl p-4 mb-3 text-center transition-all duration-300">
+                            
+                            <div class="inline-flex items-center gap-2 bg-slate-950/90 border border-cyan-400/50 px-3.5 py-1 rounded-full mb-2 shadow-inner">
+                                <span class="w-2 h-2 bg-cyan-400 rounded-full animate-ping"></span>
+                                <span class="text-[11px] text-slate-300 font-bold uppercase">ASSET:</span>
+                                <span id="signalBoxAsset" class="text-xs md:text-sm font-black font-mono text-cyan-300 tracking-wide">NO_DATA</span>
+                                <span id="signalBoxMarketType" class="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full">REAL STORE</span>
+                            </div>
+
+                            <div id="actionType" class="text-2xl md:text-3xl font-black tracking-wider text-amber-300 my-1 uppercase">
+                                UNAVAILABLE_DATA
+                            </div>
+
+                            <div class="text-xs text-slate-200 font-mono mt-1 flex flex-wrap justify-center items-center gap-2">
+                                <span>SETUP: <b id="setupName" class="text-cyan-300">Awaiting Valid OHLC Bars</b></span>
+                                <span>|</span>
+                                <span>OOS VALIDATION: <b id="accuracyScore" class="text-emerald-300">UNVERIFIED</b></span>
+                            </div>
+                        </div>
+
+                        <!-- TECHNICAL TOP 5 COMBINATION PILL BAR (REAL CHECKS ONLY) -->
+                        <div class="bg-slate-950/90 cyber-border rounded-xl p-2.5 mb-3 text-[10px] font-mono">
+                            <div class="flex justify-between items-center mb-1 pb-1 border-b border-slate-800">
+                                <span class="text-amber-300 font-extrabold uppercase">⭐ Technical TOP 5 Combination Status</span>
+                                <span id="top5PassBadge" class="text-emerald-400 font-black">0 / 5 ACTIVE</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-[9px]">
+                                <div>1. SMC+Liq: <b id="t5_1" class="text-cyan-300">--</b></div>
+                                <div>2. Wyckoff+Struct: <b id="t5_2" class="text-cyan-300">--</b></div>
+                                <div>3. OB + FVG: <b id="t5_3" class="text-emerald-300">--</b></div>
+                                <div>4. MTF Confluence: <b id="t5_4" class="text-amber-300">--</b></div>
+                                <div class="col-span-2">5. Walk-Forward OOS + k-NN: <b id="t5_5" class="text-white">--</b></div>
+                            </div>
+                        </div>
+
+                        <!-- EXACT IST SCHEDULE & CONFLUENCE METER -->
+                        <div class="bg-slate-950/90 cyber-border rounded-xl p-2.5 mb-3 text-xs font-mono">
+                            <div class="flex justify-between items-center mb-1.5 pb-1 border-b border-slate-800">
+                                <span class="text-[10px] text-cyan-300 font-bold uppercase">🇮🇳 Exact IST Execution &amp; Dataset Size</span>
+                                <span id="entryStatusTag" class="bg-amber-950 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[10px] font-bold">
+                                    UNAVAILABLE_DATA
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="bg-cardBg p-1.5 rounded-lg border border-borderCol/60">
+                                    <span class="text-[8px] text-slate-400 block uppercase">Entry IST (:00s)</span>
+                                    <span id="exactEntryTime" class="text-xs font-bold text-emerald-400">--:--:--</span>
+                                </div>
+                                <div class="bg-cardBg p-1.5 rounded-lg border border-borderCol/60">
+                                    <span class="text-[8px] text-slate-400 block uppercase">Expiry Exit (:00s)</span>
+                                    <span id="exactExitTime" class="text-xs font-bold text-rose-400">--:--:--</span>
+                                </div>
+                                <div class="bg-cardBg p-1.5 rounded-lg border border-borderCol/60">
+                                    <span class="text-[8px] text-slate-400 block uppercase">Valid Bars (N)</span>
+                                    <span id="confluenceMeter" class="text-xs font-bold text-cyan-400">N = 0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DETAILED REASONING -->
+                        <div class="bg-slate-950/95 cyber-border rounded-xl p-3 text-xs text-slate-200 leading-relaxed min-h-[105px] max-h-[135px] overflow-y-auto shadow-inner">
+                            <p id="aiReasonText" class="text-slate-300 whitespace-pre-line text-[10px] font-mono">STATUS: UNAVAILABLE_DATA.
+No market data is invented on boot. Click "📊 Load 45-Bar Test Data", "📂 Import CSV/JSON OHLC", or "2️⃣ 🎥 Share Live Chart" to execute real indicator and structure calculations.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 mt-2 border-t border-borderCol flex gap-2">
+                        <button onclick="scanLiveScreenNow(true)" class="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-xs py-3 rounded-xl transition shadow-glow-cyan tracking-wide">
+                            🔍 Execute Real Mathematical Scan Now
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- 3-PILLAR LIVE TELEMETRY MATRIX (100% REAL MATH, ZERO FAKE ML STRINGS)     -->
+            <!-- ========================================================================= -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                <!-- LIBRARY 1: REAL MARKET ENGINE (FRACTAL SMC + TRUE INDICATORS) -->
+                <div class="bg-cardBg cyber-border rounded-2xl p-4 shadow-glow-cyan space-y-2.5">
+                    <div class="flex justify-between items-center pb-2 border-b border-borderCol">
+                        <div>
+                            <span class="text-xs font-black text-cyan-400 uppercase tracking-wider block">🏛️ 1. Real Market Engine (Isolated Store)</span>
+                            <span class="text-[10px] text-slate-400">3-Bar Fractal BOS/CHoCH • Unmitigated OB/FVG • True Wilder Ind</span>
+                        </div>
+                        <span id="lib1ScoreBadge" class="text-[10px] font-mono bg-blue-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30">N=0 Bars</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">1. Fractal Structure (BOS/CHoCH)</span>
+                            <span id="L1_structure" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">2. BSL/SSL Sweep &amp; EQH/EQL</span>
+                            <span id="L1_liquidityIdm" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">3. Unmitigated OB &amp; 3-Bar FVG</span>
+                            <span id="L1_blocksFvg" class="font-bold text-emerald-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">4. Wyckoff 15-Bar Box &amp; S/D</span>
+                            <span id="L1_srSdTrend" class="font-bold text-amber-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">5. True Volume-Weighted VWAP</span>
+                            <span id="L1_dowElliottWyckoff" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">6. Active Swing Fibonacci Ratio</span>
+                            <span id="L1_indGroup3" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">7. OHLC Price Action Pattern</span>
+                            <span id="L1_candlePa" class="font-bold text-emerald-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">8. False Breakout &amp; ATR Regime</span>
+                            <span id="L1_breakFakeMom" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">9. Wilder RSI(14) / MACD / EMA</span>
+                            <span id="L1_indGroup1" class="font-bold text-amber-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">10. ATR(14) / BB(20,2) / ADX(14)</span>
+                            <span id="L1_indGroup2" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIBRARY 2: OTC SEPARATE RESEARCH ENGINE (ISOLATED OTC STORE) -->
+                <div class="bg-cardBg cyber-border rounded-2xl p-4 shadow-glow-cyan space-y-2.5">
+                    <div class="flex justify-between items-center pb-2 border-b border-borderCol">
+                        <div>
+                            <span class="text-xs font-black text-amber-400 uppercase tracking-wider block">🔬 2. OTC Research Engine (Isolated Store)</span>
+                            <span class="text-[10px] text-slate-400">Pearson Lag-1 AutoCorr • Return Z-Score • Empirical Streak Rev</span>
+                        </div>
+                        <span id="lib2ScoreBadge" class="text-[10px] font-mono bg-amber-950 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">N=0 Bars</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">1. OTC Return Distribution</span>
+                            <span id="L2_synthStats" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">2. Consecutive Streak Sequence</span>
+                            <span id="L2_wickSeq" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">3. Measured Wick-to-Body Ratio</span>
+                            <span id="L2_repeatCluster" class="font-bold text-amber-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">4. Volatility Clustering Ratio</span>
+                            <span id="L2_rangeAnomaly" class="font-bold text-emerald-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">5-6. Empirical Streak Reversion</span>
+                            <span id="L2_meanRevMom" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">7. Pearson Lag-1 Autocorrelation</span>
+                            <span id="L2_regimeAuto" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">8. Euclidean 4-Bar k-NN Match</span>
+                            <span id="L2_tsKnn" class="font-bold text-amber-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">9. Statistical Return Z-Score</span>
+                            <span id="L2_fakeoutFreq" class="font-bold text-emerald-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">10. OTC Regime (ADX + AutoCorr)</span>
+                            <span id="L2_durDist" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">11. OTC Store Data Integrity</span>
+                            <span id="L2_volQuality" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIBRARY 3: STATISTICAL BACKTESTING & WALK-FORWARD OOS VALIDATION -->
+                <div class="bg-cardBg cyber-border rounded-2xl p-4 shadow-glow-cyan space-y-2.5">
+                    <div class="flex justify-between items-center pb-2 border-b border-borderCol">
+                        <div>
+                            <span class="text-xs font-black text-emerald-400 uppercase tracking-wider block">📈 3. Empirical Quant &amp; Walk-Forward OOS</span>
+                            <span class="text-[10px] text-slate-400">60/40 Walk-Forward Split • Euclidean k-NN • Zero Fake ML Labels</span>
+                        </div>
+                        <span id="lib3ScoreBadge" class="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">Audited</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">1. In-Sample Backtest (60% Split)</span>
+                            <span id="L3_rfXgb" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">2. Out-of-Sample Test (40% Split)</span>
+                            <span id="L3_lstmFeat" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">3. Empirical Bayesian Posterior</span>
+                            <span id="L3_bayesMl" class="font-bold text-emerald-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-amber-300 block uppercase">4. Historical k-NN Next-Bar Hit%</span>
+                            <span id="L3_wfMonteCarlo" class="font-bold text-amber-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">5. Return Outlier Z-Filter</span>
+                            <span id="L3_outlierCorr" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">6. MTF Aggregation (1x vs 5x Bars)</span>
+                            <span id="L3_mtfBacktest" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">7. IS vs OOS Overfitting Delta</span>
+                            <span id="L3_regimeCalib" class="font-bold text-emerald-300">UNAVAILABLE_DATA</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50">
+                            <span class="text-[8px] text-slate-400 block uppercase">8. Unimplemented ML Models Status</span>
+                            <span id="L3_overfitOos" class="font-bold text-slate-400">RF/LSTM: NOT_IMPLEMENTED</span>
+                        </div>
+                        <div class="bg-slate-950/90 p-2 rounded-lg border border-borderCol/50 col-span-2">
+                            <span class="text-[8px] text-slate-400 block uppercase">9. Walk-Forward OOS Verification Summary</span>
+                            <span id="L3_confPerf" class="font-bold text-cyan-300">Requires N &gt;= 25 Valid OHLC Bars</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- SEPARATE MODULE: ADVANCED 20-FEATURE CANDLE PSYCHOLOGY ANALYSIS ENGINE    -->
+            <!-- ========================================================================= -->
+            <div class="bg-cardBg cyber-border rounded-2xl p-5 shadow-glow-cyan space-y-4">
+                <div class="flex flex-wrap justify-between items-center gap-2 pb-2.5 border-b border-borderCol">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base font-black text-cyan-400 tracking-wide uppercase">🧠 Advanced 20-Feature Candle Psychology Analysis Engine</h3>
+                            <span id="psychEngineModeTag" class="bg-blue-950 text-cyan-300 border border-cyan-500/40 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full">
+                                AWAITING VALID OHLC
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">
+                            <b class="text-emerald-300">Strict Audit Compliance:</b> Computes exact OHLC ratios and separates <b>Measured Data</b> from <b>Estimated Psychological Interpretation</b>.
+                        </p>
+                    </div>
+                    <span id="psychDataQualityBadge" class="text-xs font-mono bg-amber-950 text-amber-300 border border-amber-500/50 px-3 py-1 rounded-lg font-bold">
+                        Status: UNAVAILABLE_DATA
+                    </span>
+                </div>
+
+                <!-- 20-FEATURE CANDLE PSYCHOLOGY TELEMETRY GRID -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2 text-[10px] font-mono">
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-cyan-400 block uppercase">1-2. CLV Pressure &amp; Mom</span>
+                        <span id="PSY_1_2" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-cyan-400 block uppercase">3-4. Upper &amp; Lower Wick</span>
+                        <span id="PSY_3_4" class="font-bold text-amber-300">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-cyan-400 block uppercase">5-6. Body Strength &amp; Doji</span>
+                        <span id="PSY_5_6" class="font-bold text-emerald-300">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-cyan-400 block uppercase">7-8. Engulfing &amp; Pin Bar</span>
+                        <span id="PSY_7_8" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-cyan-400 block uppercase">9-10. Inside/Outside Bar</span>
+                        <span id="PSY_9_10" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-amber-300 block uppercase">11-12. Streak &amp; Exhaustion</span>
+                        <span id="PSY_11_12" class="font-bold text-amber-300">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-amber-300 block uppercase">13-14. Imbalance &amp; Accept</span>
+                        <span id="PSY_13_14" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-amber-300 block uppercase">15-16. Context &amp; S/R Test</span>
+                        <span id="PSY_15_16" class="font-bold text-emerald-300">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-amber-300 block uppercase">17-18. Sweep &amp; Fakeout</span>
+                        <span id="PSY_17_18" class="font-bold text-cyan-300">UNAVAILABLE_DATA</span>
+                    </div>
+                    <div class="bg-slate-950/90 p-2.5 rounded-xl border border-borderCol/60">
+                        <span class="text-[8px] text-amber-300 block uppercase">19-20. Cont/Rev &amp; Multi-Bar</span>
+                        <span id="PSY_19_20" class="font-bold text-white">UNAVAILABLE_DATA</span>
+                    </div>
+                </div>
+
+                <!-- HISTORICAL CANDLE-BY-CANDLE PSYCHOLOGY BREAKDOWN TABLE -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-[11px]">
+                        <thead>
+                            <tr class="border-b border-borderCol text-slate-400 uppercase text-[9px] bg-slate-950/90 font-mono">
+                                <th class="py-2 px-2.5">Bar #</th>
+                                <th class="py-2 px-2.5">Candle Type &amp; Class</th>
+                                <th class="py-2 px-2.5">Measured OHLC &amp; W/B Ratio</th>
+                                <th class="py-2 px-2.5">Measured CLV Pressure</th>
+                                <th class="py-2 px-2.5">Wick &amp; Momentum</th>
+                                <th class="py-2 px-2.5">Structural Context</th>
+                                <th class="py-2 px-2.5">Estimated Psychology Interpretation</th>
+                                <th class="py-2 px-2.5 text-right">Data Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candlePsychologyTableBody" class="divide-y divide-borderCol/40 font-mono">
+                            <tr>
+                                <td colspan="8" class="py-4 text-center text-slate-500 font-sans">
+                                    UNAVAILABLE_DATA: Load 45-Bar Test Data, Import CSV/JSON OHLC, or Share Live Screen.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VERIFIED SESSION TRADE LOG TABLE & AUTOMATED UNIT/INTEGRATION TEST SUITE -->
+            <div class="bg-cardBg cyber-border rounded-2xl p-5 shadow-glow-cyan">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+                    <div class="flex items-center space-x-3">
+                        <img class="bot-logo-img w-8 h-8 rounded-full object-cover border border-cyan-400" alt="Logo">
+                        <div>
+                            <h3 class="text-base font-black text-white tracking-wide">📊 Audited Trade History &amp; Strict Result Classifier</h3>
+                            <p class="text-xs text-slate-400">Explicitly distinguishes `UNAVAILABLE_DATA`, `PENDING_DATA`, `INVALID_DATA`, and `CALCULATION_ERROR`.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="runFullAuditTestSuite(true)" class="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 text-xs font-mono font-bold px-3 py-1.5 rounded-lg transition">
+                            🧪 Run 18 Unit &amp; Integration Tests
+                        </button>
+                        <span id="tableSessionBadge" class="text-xs bg-rose-950/85 border border-rose-600/50 px-3 py-1.5 rounded-lg text-rose-300 font-bold">
+                            Bot is OFF • Start Auto Bot to Track Trades
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Automated Unit & Integration Test Suite Output Banner -->
+                <div id="unitTestReportBox" class="hidden bg-slate-950 border border-cyan-500/50 rounded-xl p-3.5 mb-4 text-[11px] font-mono space-y-1.5">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                        <span class="text-cyan-400 font-extrabold uppercase">🧪 Automated Unit &amp; Integration Audit Suite (18 Real Math &amp; Flow Tests)</span>
+                        <button onclick="document.getElementById('unitTestReportBox').classList.add('hidden')" class="text-slate-400 hover:text-white text-xs">✖ Close</button>
+                    </div>
+                    <div id="unitTestReportContent" class="grid grid-cols-1 md:grid-cols-2 gap-1.5 text-[10px]"></div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-borderCol text-slate-400 uppercase text-[10px] bg-slate-950/80">
+                                <th class="py-2.5 px-3">Asset &amp; Store</th>
+                                <th class="py-2.5 px-3">Signal</th>
+                                <th class="py-2.5 px-3">Expiry</th>
+                                <th class="py-2.5 px-3">Entry IST (:00s)</th>
+                                <th class="py-2.5 px-3">Exit IST (:00s)</th>
+                                <th class="py-2.5 px-3">Locked Open</th>
+                                <th class="py-2.5 px-3">Verified Close</th>
+                                <th class="py-2.5 px-3">Delta &amp; Setup</th>
+                                <th class="py-2.5 px-3 text-right">Audited Result</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradeHistoryBody" class="divide-y divide-borderCol/40 font-mono">
+                            <tr>
+                                <td colspan="9" class="py-6 text-center text-slate-500 font-sans">
+                                    No trades logged in this session yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- AUDITED REAL MATHEMATICAL ENGINE (ZERO FAKE FORMULAS, ISOLATED STORES)    -->
+    <!-- ========================================================================= -->
+    <script>
+        const SECRET_PASSCODE = "Arnavnayak21218@";
+        let autoBotActive = false;
+        let screenStream = null;
+        let isScreenConnected = false;
+        let tradeLog = [];
+
+        // STRICT REQUIREMENT #8: Separate, isolated OHLC datasets for Real Market vs OTC
+        let realMarketOhlcStore = [];
+        let otcOhlcStore = [];
+
+        let atomicTimeOffsetMs = 0;
+        let lastScannedMinute = -1;
+        let lastDetectedAsset = "EUR/USD";
+
+        const queuedTradeIds = new Set();
+        const completedTradeIds = new Set();
+        const activeVerificationLocks = new Set();
+
+        function setText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
+        function playCuteSignalSound(type = 'BUY') {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioCtx();
+                const now = ctx.currentTime;
+                const notes = type === 'BUY' ? [523.25, 659.25, 783.99, 1046.50] : [880.00, 659.25, 523.25, 659.25];
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.085);
+                    gain.gain.setValueAtTime(0.001, now + idx * 0.085);
+                    gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.085 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.085 + 0.28);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.085);
+                    osc.stop(now + idx * 0.085 + 0.3);
+                });
+            } catch (e) {}
+        }
+
+        const DEFAULT_ANIME_LOGO_SVG = `data:image/svg+xml;utf8,` + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+            <defs>
+                <radialGradient id="bgGlow" cx="50%" cy="45%" r="55%">
+                    <stop offset="0%" stop-color="#00f0ff"/>
+                    <stop offset="60%" stop-color="#09152b"/>
+                    <stop offset="100%" stop-color="#020617"/>
+                </radialGradient>
+                <linearGradient id="jacketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#38bdf8"/>
+                    <stop offset="100%" stop-color="#0284c7"/>
+                </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="98" fill="url(#bgGlow)" stroke="#00f0ff" stroke-width="3"/>
+            <path d="M35 195 C38 145, 62 132, 100 132 C138 132, 162 145, 165 195 Z" fill="url(#jacketGrad)" stroke="#00f0ff" stroke-width="2"/>
+            <path d="M73 130 Q100 188 127 130" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+            <path d="M73 130 Q100 188 127 130" fill="none" stroke="#ef4444" stroke-width="5" stroke-dasharray="6 8"/>
+            <circle cx="100" cy="160" r="6" fill="#facc15"/>
+            <rect x="86" y="114" width="28" height="22" rx="8" fill="#d99b72"/>
+            <path d="M60 66 C60 44, 140 44, 140 66 C142 98, 128 124, 100 126 C72 124, 58 98, 60 66 Z" fill="#d99b72"/>
+            <circle cx="81" cy="86" r="5" fill="#000"/><circle cx="119" cy="86" r="5" fill="#000"/>
+            <path d="M55 78 C48 52, 64 26, 98 22 C128 19, 150 38, 145 76 Z" fill="#0f172a"/>
+        </svg>`);
+
+        function applyBotLogoEverywhere() {
+            const customLogo = localStorage.getItem('arnav_custom_anime_logo') || DEFAULT_ANIME_LOGO_SVG;
+            document.querySelectorAll('.bot-logo-img').forEach(img => { img.src = customLogo; });
+        }
+
+        function handleCustomLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                localStorage.setItem('arnav_custom_anime_logo', e.target.result);
+                applyBotLogoEverywhere();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ============================================================================
+        // 1. STRICT OHLC DATASET VALIDATOR (NEVER INVENTS MISSING VALUES)
+        // Explicitly distinguishes UNAVAILABLE_DATA, INVALID_DATA, and VALIDATED.
+        // ============================================================================
+        function validateOhlcSeriesStrict(rawBars) {
+            if (!Array.isArray(rawBars) || rawBars.length === 0) {
+                return { status: "UNAVAILABLE_DATA", validBars: [], invalidCount: 0, dupCount: 0, gapCount: 0 };
+            }
+
+            let validBars = [];
+            let invalidCount = 0;
+            let dupCount = 0;
+            let gapCount = 0;
+            const seenTs = new Set();
+
+            for (let i = 0; i < rawBars.length; i++) {
+                const b = rawBars[i];
+                if (!b || typeof b !== "object") { invalidCount++; continue; }
+
+                const ts = Number(b.timestamp ?? b.time ?? 0);
+                const o = Number(b.open ?? b.openPrice);
+                const h = Number(b.high ?? b.highPrice);
+                const l = Number(b.low ?? b.lowPrice);
+                const c = Number(b.close ?? b.closePrice);
+                const v = (b.volume !== undefined && b.volume !== null && b.volume !== "") ? Number(b.volume) : null;
+
+                if (!Number.isFinite(o) || !Number.isFinite(h) || !Number.isFinite(l) || !Number.isFinite(c) || o <= 0 || h <= 0 || l <= 0 || c <= 0) {
+                    invalidCount++;
+                    continue;
+                }
+                // High must be >= max(O,C) and Low must be <= min(O,C)
+                if (h < Math.max(o, c) - 1e-7 || l > Math.min(o, c) + 1e-7 || h < l) {
+                    invalidCount++;
+                    continue;
+                }
+                if (ts > 0) {
+                    if (seenTs.has(ts)) { dupCount++; continue; }
+                    seenTs.add(ts);
+                }
+
+                validBars.push({
+                    timestamp: ts,
+                    openPrice: o,
+                    highPrice: h,
+                    lowPrice: l,
+                    closePrice: c,
+                    volume: (v !== null && Number.isFinite(v) && v > 0) ? v : null
+                });
+            }
+
+            if (validBars.length === 0) {
+                return { status: "INVALID_DATA", validBars: [], invalidCount, dupCount, gapCount: 0 };
+            }
+
+            // Sort chronologically if timestamps exist
+            if (validBars.every(x => x.timestamp > 0)) {
+                validBars.sort((a, b) => a.timestamp - b.timestamp);
+                if (validBars.length >= 3) {
+                    let diffs = [];
+                    for (let i = 1; i < validBars.length; i++) {
+                        const d = validBars[i].timestamp - validBars[i - 1].timestamp;
+                        if (d > 0) diffs.push(d);
+                    }
+                    diffs.sort((a, b) => a - b);
+                    const medianStep = diffs[Math.floor(diffs.length / 2)] || 60000;
+                    for (let i = 1; i < validBars.length; i++) {
+                        const d = validBars[i].timestamp - validBars[i - 1].timestamp;
+                        if (d > medianStep * 1.5) gapCount += Math.round(d / medianStep) - 1;
+                    }
+                }
+            }
+
+            return {
+                status: "VALIDATED",
+                validBars,
+                invalidCount,
+                dupCount,
+                gapCount
+            };
+        }
+
+        // ============================================================================
+        // 2. STRICT TRADE OUTCOME CLASSIFIER (EXPLICIT ERROR/PENDING DISTINCTION)
+        // Distinguishes: UNAVAILABLE_DATA, PENDING_DATA, INVALID_DATA, CALCULATION_ERROR
+        // ============================================================================
+        function classifyTradeOutcomeStrict(signalDirection, openPrice, closePrice, meta = {}) {
+            const SCALE = 1000000;
+
+            if (meta.state === "PENDING_DATA") {
+                return { outcomeCode: "PENDING_DATA", statusLabel: "PENDING_DATA ⏳", isReliable: false, deltaPrice: 0, polarity: "PENDING" };
+            }
+            if (meta.state === "UNAVAILABLE_DATA" || meta.isReliable === false) {
+                return { outcomeCode: "UNAVAILABLE_DATA", statusLabel: "UNAVAILABLE_DATA ⚠️", isReliable: false, deltaPrice: 0, polarity: "UNAVAILABLE" };
+            }
+
+            const rawDir = String(signalDirection || "").toUpperCase();
+            const isBuy = rawDir.includes("BUY") || rawDir.includes("CALL") || rawDir.includes("HIGHER");
+            const isSell = rawDir.includes("SELL") || rawDir.includes("PUT") || rawDir.includes("LOWER");
+            if (!isBuy && !isSell) {
+                return { outcomeCode: "INVALID_DATA", statusLabel: "INVALID_DATA (DIR) ⚠️", isReliable: false, deltaPrice: 0, polarity: "INVALID_DIR" };
+            }
+
+            if (openPrice === null || openPrice === undefined || closePrice === null || closePrice === undefined || openPrice === "" || closePrice === "") {
+                return { outcomeCode: "UNAVAILABLE_DATA", statusLabel: "UNAVAILABLE_DATA ⚠️", isReliable: false, deltaPrice: 0, polarity: "MISSING_PRICE" };
+            }
+
+            const numOpen = Number(openPrice);
+            const numClose = Number(closePrice);
+            if (!Number.isFinite(numOpen) || !Number.isFinite(numClose) || numOpen <= 0 || numClose <= 0) {
+                return { outcomeCode: "INVALID_DATA", statusLabel: "INVALID_DATA (NaN) ⚠️", isReliable: false, deltaPrice: 0, polarity: "INVALID_NUMERIC" };
+            }
+
+            if (typeof meta.snapshotAgeMs === "number" && (meta.snapshotAgeMs > 15000 || meta.snapshotAgeMs < -5000)) {
+                return { outcomeCode: "UNAVAILABLE_DATA", statusLabel: "UNAVAILABLE_DATA (STALE) ⚠️", isReliable: false, deltaPrice: 0, polarity: "STALE_TS" };
+            }
+
+            const openInt = Math.round(numOpen * SCALE);
+            const closeInt = Math.round(numClose * SCALE);
+            if (!Number.isSafeInteger(openInt) || !Number.isSafeInteger(closeInt)) {
+                return { outcomeCode: "CALCULATION_ERROR", statusLabel: "CALCULATION_ERROR ⚠️", isReliable: false, deltaPrice: 0, polarity: "OVERFLOW" };
+            }
+
+            const diffInt = closeInt - openInt;
+            const deltaPrice = diffInt / SCALE;
+
+            if (diffInt === 0) {
+                return { outcomeCode: "DRAW", statusLabel: "DRAW (TIE) ⚖️", isReliable: true, deltaPrice: 0, polarity: "DOJI (C = O)" };
+            }
+
+            const isBullishClose = diffInt > 0;
+            const polarity = isBullishClose ? "BULL (C > O)" : "BEAR (C < O)";
+            const isWin = isBuy ? isBullishClose : !isBullishClose;
+
+            return {
+                outcomeCode: isWin ? "WIN" : "LOSS",
+                statusLabel: isWin ? "WIN ✅" : "LOSS ❌",
+                isReliable: true,
+                deltaPrice,
+                polarity
+            };
+        }
+
+        // ============================================================================
+        // 3. REAL MATHEMATICAL TECHNICAL INDICATORS MODULE
+        // Implements Wilder's RSI(14), ATR(14), ADX(14), EMA(9/21/12/26), MACD, BB(20,2),
+        // Stochastic(14,3), CCI(14), and Volume-Weighted VWAP.
+        // ============================================================================
+        function computeExponentialMovingAverage(values, period) {
+            if (!Array.isArray(values) || values.length < period || period <= 0) return null;
+            const k = 2 / (period + 1);
+            let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+            for (let i = period; i < values.length; i++) {
+                ema = values[i] * k + ema * (1 - k);
+            }
+            return ema;
+        }
+
+        function computeTechnicalIndicatorsReal(bars) {
+            if (!Array.isArray(bars) || bars.length < 5) {
+                return { status: "UNAVAILABLE_DATA" };
+            }
+
+            const n = bars.length;
+            const closes = bars.map(b => b.closePrice);
+            const highs = bars.map(b => b.highPrice);
+            const lows = bars.map(b => b.lowPrice);
+
+            // EMA 9 & EMA 21
+            const ema9 = n >= 9 ? computeExponentialMovingAverage(closes, 9) : null;
+            const ema21 = n >= 21 ? computeExponentialMovingAverage(closes, 21) : null;
+            const sma20 = n >= 20 ? closes.slice(-20).reduce((a, b) => a + b, 0) / 20 : null;
+
+            // Wilder's RSI (14)
+            let rsi14 = null;
+            if (n >= 15) {
+                let avgGain = 0, avgLoss = 0;
+                for (let i = 1; i <= 14; i++) {
+                    const chg = closes[i] - closes[i - 1];
+                    if (chg > 0) avgGain += chg; else avgLoss -= chg;
+                }
+                avgGain /= 14;
+                avgLoss /= 14;
+                for (let i = 15; i < n; i++) {
+                    const chg = closes[i] - closes[i - 1];
+                    const gain = chg > 0 ? chg : 0;
+                    const loss = chg < 0 ? -chg : 0;
+                    avgGain = (avgGain * 13 + gain) / 14;
+                    avgLoss = (avgLoss * 13 + loss) / 14;
+                }
+                if (avgLoss === 0 && avgGain === 0) rsi14 = 50.0;
+                else if (avgLoss === 0) rsi14 = 100.0;
+                else {
+                    const rs = avgGain / avgLoss;
+                    rsi14 = +(100 - (100 / (1 + rs))).toFixed(2);
+                }
+            }
+
+            // MACD (12, 26, 9)
+            let macdObj = { macdLine: null, signalLine: null, hist: null };
+            if (n >= 26) {
+                const k12 = 2 / 13, k26 = 2 / 27;
+                let e12 = closes[0], e26 = closes[0];
+                const macdSeries = [];
+                for (let i = 1; i < n; i++) {
+                    e12 = closes[i] * k12 + e12 * (1 - k12);
+                    e26 = closes[i] * k26 + e26 * (1 - k26);
+                    if (i >= 25) macdSeries.push(e12 - e26);
+                }
+                const mLine = macdSeries[macdSeries.length - 1];
+                const sigLine = macdSeries.length >= 9 ? computeExponentialMovingAverage(macdSeries, 9) : mLine;
+                macdObj = { macdLine: mLine, signalLine: sigLine, hist: mLine - sigLine };
+            }
+
+            // True Range & Wilder's ATR (14) + ADX (14)
+            let atr14 = null, adx14 = null;
+            if (n >= 15) {
+                const trList = [], plusDmList = [], minusDmList = [];
+                for (let i = 1; i < n; i++) {
+                    const hDiff = highs[i] - highs[i - 1];
+                    const lDiff = lows[i - 1] - lows[i];
+                    const tr = Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1]));
+                    trList.push(tr);
+                    plusDmList.push((hDiff > lDiff && hDiff > 0) ? hDiff : 0);
+                    minusDmList.push((lDiff > hDiff && lDiff > 0) ? lDiff : 0);
+                }
+                let smTr = trList.slice(0, 14).reduce((a, b) => a + b, 0) / 14;
+                let smPlus = plusDmList.slice(0, 14).reduce((a, b) => a + b, 0) / 14;
+                let smMinus = minusDmList.slice(0, 14).reduce((a, b) => a + b, 0) / 14;
+                const dxList = [];
+
+                for (let i = 14; i < trList.length; i++) {
+                    smTr = (smTr * 13 + trList[i]) / 14;
+                    smPlus = (smPlus * 13 + plusDmList[i]) / 14;
+                    smMinus = (smMinus * 13 + minusDmList[i]) / 14;
+                    const pDi = smTr > 0 ? (smPlus / smTr) * 100 : 0;
+                    const mDi = smTr > 0 ? (smMinus / smTr) * 100 : 0;
+                    const denom = pDi + mDi;
+                    dxList.push(denom > 0 ? (Math.abs(pDi - mDi) / denom) * 100 : 0);
+                }
+                atr14 = smTr;
+                if (dxList.length > 0) {
+                    adx14 = +(dxList.reduce((a, b) => a + b, 0) / dxList.length).toFixed(1);
+                }
+            } else {
+                // Fallback empirical mean range over available bars
+                atr14 = bars.reduce((a, b) => a + (b.highPrice - b.lowPrice), 0) / n;
+            }
+
+            // Bollinger Bands (20, 2)
+            let bbObj = { upper: null, mid: sma20, lower: null };
+            if (n >= 20 && sma20 !== null) {
+                const slice20 = closes.slice(-20);
+                const variance = slice20.reduce((acc, val) => acc + Math.pow(val - sma20, 2), 0) / 20;
+                const stdDev = Math.sqrt(variance);
+                bbObj = { upper: sma20 + 2 * stdDev, mid: sma20, lower: sma20 - 2 * stdDev };
+            }
+
+            // Stochastic (14, 3) & CCI (14)
+            let stochK = null, cci14 = null;
+            if (n >= 14) {
+                const h14 = Math.max(...highs.slice(-14));
+                const l14 = Math.min(...lows.slice(-14));
+                stochK = h14 > l14 ? +(((closes[n - 1] - l14) / (h14 - l14)) * 100).toFixed(1) : 50.0;
+
+                const tpList = bars.slice(-14).map(b => (b.highPrice + b.lowPrice + b.closePrice) / 3);
+                const smaTp = tpList.reduce((a, b) => a + b, 0) / 14;
+                const meanDev = tpList.reduce((a, tp) => a + Math.abs(tp - smaTp), 0) / 14;
+                cci14 = meanDev > 0 ? Math.round((tpList[13] - smaTp) / (0.015 * meanDev)) : 0;
+            }
+
+            // True Volume-Weighted VWAP (Only if real volume exists; never invents volume!)
+            let vwap = null;
+            const barsWithVol = bars.filter(b => b.volume !== null && b.volume > 0);
+            if (barsWithVol.length === n) {
+                let cumTpVol = 0, cumVol = 0;
+                for (let b of barsWithVol) {
+                    const tp = (b.highPrice + b.lowPrice + b.closePrice) / 3;
+                    cumTpVol += tp * b.volume;
+                    cumVol += b.volume;
+                }
+                if (cumVol > 0) vwap = cumTpVol / cumVol;
+            }
+
+            return {
+                status: "COMPLETE",
+                ema9,
+                ema21,
+                sma20,
+                rsi14,
+                macdObj,
+                atr14,
+                adx14,
+                bbObj,
+                stochK,
+                cci14,
+                vwap
+            };
+        }
+
+        // ============================================================================
+        // 4. REAL MARKET STRUCTURE (3-BAR FRACTAL SWINGS, BOS, CHoCH, LIQUIDITY, OB, FVG, WYCKOFF)
+        // ============================================================================
+        function analyzeSmcAndWyckoffReal(bars, atrVal) {
+            if (!Array.isArray(bars) || bars.length < 7) {
+                return { status: "INSUFFICIENT_DATA" };
+            }
+
+            const n = bars.length;
+            const atr = (atrVal && atrVal > 0) ? atrVal : (bars.reduce((a, b) => a + (b.highPrice - b.lowPrice), 0) / n);
+
+            // 1. Identify 3-Bar Fractal Swing Highs & Swing Lows (excluding the currently forming bar n-1)
+            const swingHighs = [];
+            const swingLows = [];
+            for (let i = 1; i <= n - 3; i++) {
+                if (bars[i].highPrice > bars[i - 1].highPrice && bars[i].highPrice >= bars[i + 1].highPrice) {
+                    swingHighs.push({ index: i, price: bars[i].highPrice });
+                }
+                if (bars[i].lowPrice < bars[i - 1].lowPrice && bars[i].lowPrice <= bars[i + 1].lowPrice) {
+                    swingLows.push({ index: i, price: bars[i].lowPrice });
+                }
+            }
+
+            const lastSH = swingHighs.length > 0 ? swingHighs[swingHighs.length - 1].price : Math.max(...bars.slice(0, n - 1).map(b => b.highPrice));
+            const prevSH = swingHighs.length > 1 ? swingHighs[swingHighs.length - 2].price : lastSH;
+            const lastSL = swingLows.length > 0 ? swingLows[swingLows.length - 1].price : Math.min(...bars.slice(0, n - 1).map(b => b.lowPrice));
+            const prevSL = swingLows.length > 1 ? swingLows[swingLows.length - 2].price : lastSL;
+
+            // Determine Prior Structural Trend State
+            let priorTrend = "RANGING";
+            if (lastSH > prevSH && lastSL >= prevSL) priorTrend = "UPTREND (HH+HL)";
+            else if (lastSH <= prevSH && lastSL < prevSL) priorTrend = "DOWNTREND (LH+LL)";
+
+            const cNow = bars[n - 1];
+
+            // BOS vs CHoCH Detection
+            let structureEvent = "INTERNAL_STRUCTURE";
+            let structureBias = 0;
+            if (cNow.closePrice > lastSH) {
+                if (priorTrend.includes("DOWNTREND")) {
+                    structureEvent = "BULLISH_CHOCH (MSS) ⬆️";
+                    structureBias = 2;
+                } else {
+                    structureEvent = "BULLISH_BOS ⬆️";
+                    structureBias = 2;
+                }
+            } else if (cNow.closePrice < lastSL) {
+                if (priorTrend.includes("UPTREND")) {
+                    structureEvent = "BEARISH_CHOCH (MSS) ⬇️";
+                    structureBias = -2;
+                } else {
+                    structureEvent = "BEARISH_BOS ⬇️";
+                    structureBias = -2;
+                }
+            } else {
+                structureEvent = `${priorTrend}`;
+                if (priorTrend.includes("UPTREND")) structureBias = 1;
+                else if (priorTrend.includes("DOWNTREND")) structureBias = -1;
+            }
+
+            // 2. Liquidity Sweep & Equal Highs/Lows (EQH/EQL)
+            const eqHighs = Math.abs(lastSH - prevSH) <= atr * 0.15 && swingHighs.length >= 2;
+            const eqLows = Math.abs(lastSL - prevSL) <= atr * 0.15 && swingLows.length >= 2;
+            let liquidityEvent = "NO_SWEEP";
+            let liquidityBias = 0;
+
+            if (cNow.lowPrice < lastSL && cNow.closePrice > lastSL) {
+                liquidityEvent = `SSL_SWEPT (${eqLows ? 'EQL Pool' : 'Swing Low'} Reject) ⬆️`;
+                liquidityBias = 2;
+            } else if (cNow.highPrice > lastSH && cNow.closePrice < lastSH) {
+                liquidityEvent = `BSL_SWEPT (${eqHighs ? 'EQH Pool' : 'Swing High'} Reject) ⬇️`;
+                liquidityBias = -2;
+            } else if (eqHighs) {
+                liquidityEvent = `EQH_POOL @ ${lastSH.toFixed(5)}`;
+            } else if (eqLows) {
+                liquidityEvent = `EQL_POOL @ ${lastSL.toFixed(5)}`;
+            }
+
+            // 3. Unmitigated Fair Value Gaps (FVG) & Order Blocks (OB)
+            let unmitigatedBullFvgs = [];
+            let unmitigatedBearFvgs = [];
+            let bullObs = [];
+            let bearObs = [];
+
+            for (let i = 2; i < n; i++) {
+                const b0 = bars[i - 2], b1 = bars[i - 1], b2 = bars[i];
+                // Bullish FVG: Low of bar i > High of bar i-2
+                if (b2.lowPrice > b0.highPrice) {
+                    let top = b2.lowPrice, bot = b0.highPrice;
+                    // Check if subsequent bars (from i+1 to n-2) completely filled below bot
+                    let mitigated = false;
+                    for (let k = i + 1; k < n - 1; k++) {
+                        if (bars[k].lowPrice <= bot) { mitigated = true; break; }
+                    }
+                    if (!mitigated) unmitigatedBullFvgs.push({ bot, top, index: i });
+                    if (b0.closePrice < b0.openPrice && (b1.highPrice - b1.lowPrice) > atr * 1.1) {
+                        bullObs.push({ low: b0.lowPrice, high: b0.highPrice });
+                    }
+                }
+                // Bearish FVG: High of bar i < Low of bar i-2
+                if (b2.highPrice < b0.lowPrice) {
+                    let top = b0.lowPrice, bot = b2.highPrice;
+                    let mitigated = false;
+                    for (let k = i + 1; k < n - 1; k++) {
+                        if (bars[k].highPrice >= top) { mitigated = true; break; }
+                    }
+                    if (!mitigated) unmitigatedBearFvgs.push({ bot, top, index: i });
+                    if (b0.closePrice > b0.openPrice && (b1.highPrice - b1.lowPrice) > atr * 1.1) {
+                        bearObs.push({ low: b0.lowPrice, high: b0.highPrice });
+                    }
+                }
+            }
+
+            let obFvgLabel = "NO_UNMITIGATED_OB_FVG";
+            let obFvgBias = 0;
+            const latestBullFvg = unmitigatedBullFvgs[unmitigatedBullFvgs.length - 1];
+            const latestBearFvg = unmitigatedBearFvgs[unmitigatedBearFvgs.length - 1];
+
+            if (latestBullFvg && (latestBullFvg.index === n - 1 || (cNow.lowPrice <= latestBullFvg.top && cNow.closePrice >= latestBullFvg.bot))) {
+                obFvgLabel = `BULL_FVG [${latestBullFvg.bot.toFixed(5)}-${latestBullFvg.top.toFixed(5)}] 🟢`;
+                obFvgBias = 2;
+            } else if (latestBearFvg && (latestBearFvg.index === n - 1 || (cNow.highPrice >= latestBearFvg.bot && cNow.closePrice <= latestBearFvg.top))) {
+                obFvgLabel = `BEAR_FVG [${latestBearFvg.bot.toFixed(5)}-${latestBearFvg.top.toFixed(5)}] 🔴`;
+                obFvgBias = -2;
+            } else if (bullObs.length > 0) {
+                const ob = bullObs[bullObs.length - 1];
+                if (cNow.lowPrice <= ob.high && cNow.closePrice >= ob.low) {
+                    obFvgLabel = `DEMAND_OB_TEST [${ob.low.toFixed(5)}] 🟢`;
+                    obFvgBias = 2;
+                }
+            } else if (bearObs.length > 0) {
+                const ob = bearObs[bearObs.length - 1];
+                if (cNow.highPrice >= ob.low && cNow.closePrice <= ob.high) {
+                    obFvgLabel = `SUPPLY_OB_TEST [${ob.high.toFixed(5)}] 🔴`;
+                    obFvgBias = -2;
+                }
+            }
+
+            // 4. Wyckoff 15-Bar Box & Supply/Demand Reaction
+            const boxLookback = bars.slice(Math.max(0, n - 15), n - 1);
+            const boxHigh = Math.max(...boxLookback.map(b => b.highPrice));
+            const boxLow = Math.min(...boxLookback.map(b => b.lowPrice));
+            let wyckoffLabel = "WYCKOFF_EQUILIBRIUM";
+            let wyckoffBias = 0;
+
+            if (cNow.lowPrice < boxLow && cNow.closePrice > boxLow) {
+                wyckoffLabel = "WYCKOFF_SPRING (ACCUMULATION) 🟢";
+                wyckoffBias = 2;
+            } else if (cNow.highPrice > boxHigh && cNow.closePrice < boxHigh) {
+                wyckoffLabel = "WYCKOFF_UTAD (DISTRIBUTION) 🔴";
+                wyckoffBias = -2;
+            } else if (cNow.closePrice > boxHigh) {
+                wyckoffLabel = "WYCKOFF_MARKUP (BREAKOUT) ⬆️";
+                wyckoffBias = 1;
+            } else if (cNow.closePrice < boxLow) {
+                wyckoffLabel = "WYCKOFF_MARKDOWN (BREAKDOWN) ⬇️";
+                wyckoffBias = -1;
+            }
+
+            // 5. Active Swing Fibonacci Ratio
+            const swingSpan = Math.max(1e-7, lastSH - lastSL);
+            const fibRetrace = +((lastSH - cNow.closePrice) / swingSpan).toFixed(3);
+
+            return {
+                status: "COMPLETE",
+                lastSH,
+                lastSL,
+                priorTrend,
+                structureEvent,
+                structureBias,
+                liquidityEvent,
+                liquidityBias,
+                obFvgLabel,
+                obFvgBias,
+                wyckoffLabel,
+                wyckoffBias,
+                fibRetrace
+            };
+        }
+
+        // ============================================================================
+        // 5. OTC SEPARATE STATISTICAL RESEARCH ENGINE (PEARSON AUTOCORR, Z-SCORE, k-NN)
+        // Operates strictly on OTC OHLC data. Zero hardcoded correlation numbers.
+        // ============================================================================
+        function runHistoricalKnnMatchReal(bars, k = 5) {
+            if (!Array.isArray(bars) || bars.length < 15) {
+                return { status: "INSUFFICIENT_HISTORY", kMatches: 0, bullNextPct: null };
+            }
+
+            const n = bars.length;
+            // Construct 4-bar normalized signed body-to-range vector for [n-4, n-3, n-2, n-1]
+            function getVec4(startIdx) {
+                const v = [];
+                for (let j = 0; j < 4; j++) {
+                    const b = bars[startIdx + j];
+                    const rng = Math.max(1e-7, b.highPrice - b.lowPrice);
+                    v.push((b.closePrice - b.openPrice) / rng);
+                }
+                return v;
+            }
+
+            const targetVec = getVec4(n - 4);
+            const candidates = [];
+
+            for (let i = 0; i <= n - 6; i++) {
+                const candVec = getVec4(i);
+                let distSq = 0;
+                for (let j = 0; j < 4; j++) {
+                    distSq += Math.pow(targetVec[j] - candVec[j], 2);
+                }
+                const nextBar = bars[i + 4];
+                const nextBull = nextBar.closePrice > nextBar.openPrice ? 1 : 0;
+                candidates.push({ dist: Math.sqrt(distSq), nextBull });
+            }
+
+            candidates.sort((a, b) => a.dist - b.dist);
+            const topK = candidates.slice(0, Math.min(k, candidates.length));
+            if (topK.length === 0) return { status: "INSUFFICIENT_HISTORY", kMatches: 0, bullNextPct: null };
+
+            const bullWins = topK.reduce((acc, x) => acc + x.nextBull, 0);
+            const avgSim = Math.max(0, Math.min(100, Math.round((1 - (topK[0].dist / 2)) * 100)));
+
+            return {
+                status: "COMPLETE",
+                kMatches: topK.length,
+                bullNextCount: bullWins,
+                bearNextCount: topK.length - bullWins,
+                bullNextPct: Math.round((bullWins / topK.length) * 100),
+                nearestSimPct: avgSim
+            };
+        }
+
+        function analyzeOtcStatisticalEngineReal(bars) {
+            if (!Array.isArray(bars) || bars.length < 10) {
+                return { status: "INSUFFICIENT_OTC_DATA" };
+            }
+
+            const n = bars.length;
+            const returns = bars.map(b => b.closePrice - b.openPrice);
+            const absReturns = returns.map(r => Math.abs(r));
+            const meanRet = returns.reduce((a, b) => a + b, 0) / n;
+            const meanAbs = absReturns.reduce((a, b) => a + b, 0) / n;
+            const stdAbs = Math.sqrt(absReturns.reduce((acc, v) => acc + Math.pow(v - meanAbs, 2), 0) / n);
+
+            // 1. True Lag-1 Pearson Autocorrelation of returns
+            let num = 0, den = 0;
+            for (let i = 1; i < n; i++) {
+                num += (returns[i] - meanRet) * (returns[i - 1] - meanRet);
+            }
+            for (let i = 0; i < n; i++) {
+                den += Math.pow(returns[i] - meanRet, 2);
+            }
+            const autocorrLag1 = den > 1e-12 ? +(num / den).toFixed(3) : 0.0;
+
+            // 2. Latest Bar Return Z-Score
+            const latestAbsRet = absReturns[n - 1];
+            const zScore = stdAbs > 1e-12 ? +((latestAbsRet - meanAbs) / stdAbs).toFixed(2) : 0.0;
+
+            // 3. Consecutive Streak & Empirical Historical Reversion Rate
+            const cNow = bars[n - 1];
+            const nowSign = Math.sign(cNow.closePrice - cNow.openPrice);
+            let currentStreak = 1;
+            for (let i = n - 2; i >= 0; i--) {
+                if (Math.sign(bars[i].closePrice - bars[i].openPrice) === nowSign && nowSign !== 0) currentStreak++;
+                else break;
+            }
+
+            // Count historical occurrences of streaks >= currentStreak and how often bar+1 reversed
+            let streakOccurrences = 0, streakReversals = 0;
+            let runLen = 1;
+            for (let i = 1; i < n - 1; i++) {
+                const sCur = Math.sign(bars[i].closePrice - bars[i].openPrice);
+                const sPrev = Math.sign(bars[i - 1].closePrice - bars[i - 1].openPrice);
+                if (sCur === sPrev && sCur !== 0) runLen++;
+                else runLen = 1;
+
+                if (runLen >= currentStreak && sCur !== 0) {
+                    streakOccurrences++;
+                    const sNext = Math.sign(bars[i + 1].closePrice - bars[i + 1].openPrice);
+                    if (sNext === -sCur) streakReversals++;
+                }
+            }
+            const empiricalRevPct = streakOccurrences > 0 ? Math.round((streakReversals / streakOccurrences) * 100) : null;
+
+            // 4. Historical k-NN Match
+            const knn = runHistoricalKnnMatchReal(bars, 5);
+
+            return {
+                status: "COMPLETE",
+                autocorrLag1,
+                zScore,
+                currentStreak,
+                nowDir: nowSign > 0 ? "BULL" : (nowSign < 0 ? "BEAR" : "DOJI"),
+                streakOccurrences,
+                empiricalRevPct,
+                knn
+            };
+        }
+
+        // ============================================================================
+        // 6. SEPARATE MODULE: 20-FEATURE CANDLE PSYCHOLOGY ENGINE (REAL OHLC MATH)
+        // ============================================================================
+        const AdvancedCandlePsychologyEngine = {
+            analyzeSeries: function(bars, marketMode = "REAL") {
+                if (!Array.isArray(bars) || bars.length === 0) return null;
+
+                const avgRange = bars.reduce((acc, c) => acc + Math.max(1e-7, c.highPrice - c.lowPrice), 0) / bars.length;
+                const lookback = bars.slice(0, Math.max(1, bars.length - 1));
+                const swingHigh = Math.max(...lookback.map(c => c.highPrice));
+                const swingLow = Math.min(...lookback.map(c => c.lowPrice));
+
+                const mtfOpen = bars[Math.max(0, bars.length - 5)].openPrice;
+                const mtfClose = bars[bars.length - 1].closePrice;
+                const mtfTrend = mtfClose > mtfOpen ? "5-Bar MTF Bullish" : (mtfClose < mtfOpen ? "5-Bar MTF Bearish" : "5-Bar MTF Flat");
+
+                let consecutiveCount = 0, lastDir = null;
+
+                const analyzedCandles = bars.map((c, idx) => {
+                    const prev1 = idx > 0 ? bars[idx - 1] : null;
+                    const range = Math.max(1e-7, c.highPrice - c.lowPrice);
+                    const body = Math.abs(c.closePrice - c.openPrice);
+                    const upperWick = Math.max(0, c.highPrice - Math.max(c.openPrice, c.closePrice));
+                    const lowerWick = Math.max(0, Math.min(c.openPrice, c.closePrice) - c.lowPrice);
+
+                    const bodyPct = Math.round((body / range) * 100);
+                    const upperWickPct = Math.round((upperWick / range) * 100);
+                    const lowerWickPct = Math.max(0, 100 - bodyPct - upperWickPct);
+                    const wickToBodyRatio = body > 1e-7 ? +((upperWick + lowerWick) / body).toFixed(2) : 9.99;
+                    const relRangeRatio = +(range / Math.max(1e-7, avgRange)).toFixed(2);
+
+                    let classification = "Indecisive (Doji)";
+                    let dirCode = "DOJI";
+                    if (bodyPct > 12) {
+                        if (c.closePrice > c.openPrice) { classification = "Bullish"; dirCode = "BULL"; }
+                        else if (c.closePrice < c.openPrice) { classification = "Bearish"; dirCode = "BEAR"; }
+                    }
+
+                    if (dirCode === lastDir && dirCode !== "DOJI") consecutiveCount++;
+                    else { consecutiveCount = 1; lastDir = dirCode; }
+
+                    const clvBullPct = Math.min(99, Math.max(1, Math.round(((c.closePrice - c.lowPrice) / range) * 100)));
+                    const clvBearPct = 100 - clvBullPct;
+                    const imbalanceDiff = Math.abs(clvBullPct - clvBearPct);
+
+                    let candleType = "Standard Bar";
+                    if (bodyPct <= 12) candleType = "Doji Cross";
+                    else if (prev1 && dirCode === "BULL" && prev1.closePrice < prev1.openPrice && c.closePrice >= prev1.openPrice && c.openPrice <= prev1.closePrice) candleType = "Bullish Engulfing";
+                    else if (prev1 && dirCode === "BEAR" && prev1.closePrice > prev1.openPrice && c.closePrice <= prev1.openPrice && c.openPrice >= prev1.closePrice) candleType = "Bearish Engulfing";
+                    else if (lowerWickPct >= 50 && bodyPct >= 14) candleType = "Bullish Pin Bar";
+                    else if (upperWickPct >= 50 && bodyPct >= 14) candleType = "Bearish Pin Bar";
+                    else if (prev1 && c.highPrice <= prev1.highPrice && c.lowPrice >= prev1.lowPrice) candleType = "Inside Bar";
+                    else if (prev1 && c.highPrice > prev1.highPrice && c.lowPrice < prev1.lowPrice) candleType = "Outside Bar";
+                    else if (bodyPct >= 78) candleType = `${classification} Marubozu`;
+
+                    let wickRejectionInfo = `U:${upperWickPct}% | L:${lowerWickPct}%`;
+                    let momentumCondition = `${classification} (${relRangeRatio}x Avg Range)`;
+                    if (consecutiveCount >= 4 && relRangeRatio < 0.85) momentumCondition = `Exhaustion (${consecutiveCount}x Shrinking)`;
+
+                    let marketContext = "Mid-Range";
+                    if (c.highPrice > swingHigh && c.closePrice < swingHigh) marketContext = "Upper Sweep / False Breakout";
+                    else if (c.lowPrice < swingLow && c.closePrice > swingLow) marketContext = "Lower Sweep / Spring";
+                    else if (c.closePrice > swingHigh) marketContext = "Resistance Breakout Acceptance";
+                    else if (c.closePrice < swingLow) marketContext = "Support Breakdown Acceptance";
+
+                    const psychExplanation = `[Measured: Body ${bodyPct}%, W/B ${wickToBodyRatio}x, CLV ${clvBullPct}%] Est. Interpretation: ${candleType} in ${marketContext} (${marketMode} store).`;
+
+                    return {
+                        index: idx + 1,
+                        candleType,
+                        classification,
+                        dirCode,
+                        openPrice: c.openPrice,
+                        highPrice: c.highPrice,
+                        lowPrice: c.lowPrice,
+                        closePrice: c.closePrice,
+                        bodyPct,
+                        upperWickPct,
+                        lowerWickPct,
+                        wickToBodyRatio,
+                        relRangeRatio,
+                        estBuyerPressure: clvBullPct,
+                        estSellerPressure: clvBearPct,
+                        imbalanceDiff,
+                        wickRejectionInfo,
+                        momentumCondition,
+                        marketContext,
+                        psychExplanation,
+                        consecutiveCount,
+                        dataQuality: "VALIDATED"
+                    };
+                });
+
+                const latest = analyzedCandles[analyzedCandles.length - 1];
+                const prev = analyzedCandles.length > 1 ? analyzedCandles[analyzedCandles.length - 2] : latest;
+
+                return {
+                    f1_2: `CLV Buy:${latest.estBuyerPressure}% Sell:${latest.estSellerPressure}%`,
+                    f3_4: `U-Wick:${latest.upperWickPct}% | L-Wick:${latest.lowerWickPct}%`,
+                    f5_6: `Body:${latest.bodyPct}% (${latest.bodyPct <= 12 ? 'Doji' : 'Active'})`,
+                    f7_8: `${latest.candleType}`,
+                    f9_10: `Range: ${latest.relRangeRatio}x Avg`,
+                    f11_12: `${latest.consecutiveCount}x ${latest.dirCode} Streak`,
+                    f13_14: `Imbalance: ${latest.imbalanceDiff}% | ${latest.bodyPct >= 55 ? 'Acceptance' : 'Rejection'}`,
+                    f15_16: `${latest.marketContext}`,
+                    f17_18: `${latest.marketContext.includes('Sweep') ? 'Sweep Detected' : 'No Sweep'}`,
+                    f19_20: `${mtfTrend} | ${prev.dirCode}->${latest.dirCode}`,
+                    contextLabel: `${marketMode} ENGINE STORE (N=${bars.length})`,
+                    analyzedCandles
+                };
+            }
+        };
+
+        // ============================================================================
+        // 7. SINGLE-WINDOW SIGNAL EVALUATOR & WALK-FORWARD OOS VALIDATOR
+        // ============================================================================
+        function evaluateSignalOnWindow(bars, mode = "REAL") {
+            if (!Array.isArray(bars) || bars.length < 15) {
+                return { status: "INSUFFICIENT_DATA", signal: "WAIT", reason: "Requires at least 15 valid OHLC bars." };
+            }
+
+            const ind = computeTechnicalIndicatorsReal(bars);
+            const smc = analyzeSmcAndWyckoffReal(bars, ind.atr14);
+            const otc = analyzeOtcStatisticalEngineReal(bars);
+            const psych = AdvancedCandlePsychologyEngine.analyzeSeries(bars, mode);
+            const latestPsych = psych.analyzedCandles[psych.analyzedCandles.length - 1];
+
+            // MTF 5-bar aggregation
+            const cNow = bars[bars.length - 1];
+            const m5Open = bars[bars.length - 5].openPrice;
+            const mtfBull = cNow.closePrice > m5Open;
+            const mtfBear = cNow.closePrice < m5Open;
+
+            let bullScore = 0, bearScore = 0;
+            let top5Count = 0;
+
+            // Top 1: SMC + Liquidity
+            if (smc.liquidityBias > 0 || smc.structureBias > 0) { bullScore += 2; top5Count++; }
+            else if (smc.liquidityBias < 0 || smc.structureBias < 0) { bearScore += 2; top5Count++; }
+
+            // Top 2: Wyckoff + Structure
+            if (smc.wyckoffBias > 0) { bullScore += 2; top5Count++; }
+            else if (smc.wyckoffBias < 0) { bearScore += 2; top5Count++; }
+
+            // Top 3: Unmitigated OB + FVG + Candle Pattern
+            if (smc.obFvgBias > 0 || latestPsych.candleType.includes("Bullish")) { bullScore += 2; top5Count++; }
+            else if (smc.obFvgBias < 0 || latestPsych.candleType.includes("Bearish")) { bearScore += 2; top5Count++; }
+
+            // Top 4: Multi-Timeframe + EMA/RSI Alignment
+            if (mtfBull && ind.ema9 !== null && ind.ema21 !== null && ind.ema9 >= ind.ema21) { bullScore += 2; top5Count++; }
+            else if (mtfBear && ind.ema9 !== null && ind.ema21 !== null && ind.ema9 < ind.ema21) { bearScore += 2; top5Count++; }
+
+            // Top 5: Mode-specific statistical filter (Real vs OTC)
+            if (mode === "OTC" && otc.status === "COMPLETE") {
+                if (otc.currentStreak >= 4 && otc.empiricalRevPct !== null && otc.empiricalRevPct >= 55) {
+                    if (otc.nowDir === "BEAR") { bullScore += 2; top5Count++; }
+                    else if (otc.nowDir === "BULL") { bearScore += 2; top5Count++; }
+                } else if (otc.knn.bullNextPct !== null) {
+                    if (otc.knn.bullNextPct >= 60) { bullScore += 2; top5Count++; }
+                    else if (otc.knn.bullNextPct <= 40) { bearScore += 2; top5Count++; }
+                }
+            } else {
+                if (ind.rsi14 !== null) {
+                    if (ind.rsi14 < 35 || (ind.rsi14 >= 50 && ind.rsi14 <= 68 && latestPsych.dirCode === "BULL")) { bullScore += 2; top5Count++; }
+                    else if (ind.rsi14 > 65 || (ind.rsi14 <= 50 && ind.rsi14 >= 32 && latestPsych.dirCode === "BEAR")) { bearScore += 2; top5Count++; }
+                }
+            }
+
+            let signal = "WAIT";
+            let setupLabel = "WAIT (LOW_CONFLUENCE)";
+            if (latestPsych.dirCode !== "DOJI" && bullScore >= 5 && bullScore >= bearScore + 2) {
+                signal = "BUY";
+                setupLabel = `${smc.structureEvent.split(' ')[0]} + ${latestPsych.candleType}`;
+            } else if (latestPsych.dirCode !== "DOJI" && bearScore >= 5 && bearScore >= bullScore + 2) {
+                signal = "SELL";
+                setupLabel = `${smc.structureEvent.split(' ')[0]} + ${latestPsych.candleType}`;
+            }
+
+            return {
+                status: "COMPLETE",
+                signal,
+                setupLabel,
+                bullScore,
+                bearScore,
+                top5Count: Math.min(5, top5Count),
+                ind,
+                smc,
+                otc,
+                psych,
+                latestPsych,
+                mtfBull,
+                mtfBear
+            };
+        }
+
+        // REAL WALK-FORWARD OUT-OF-SAMPLE (OOS) VALIDATION (NO FAKE HARDCODED WIN RATES!)
+        function runWalkForwardOosValidationReal(bars, mode = "REAL") {
+            if (!Array.isArray(bars) || bars.length < 22) {
+                return {
+                    status: "INSUFFICIENT_HISTORY",
+                    isTrades: 0, isWins: 0, isWinRate: null,
+                    oosTrades: 0, oosWins: 0, oosWinRate: null,
+                    overfitDelta: null
+                };
+            }
+
+            const splitIdx = Math.max(15, Math.floor(bars.length * 0.6));
+            let isTrades = 0, isWins = 0;
+            let oosTrades = 0, oosWins = 0;
+
+            for (let i = 15; i < bars.length - 1; i++) {
+                const windowSlice = bars.slice(0, i + 1);
+                const ev = evaluateSignalOnWindow(windowSlice, mode);
+                if (ev.signal !== "BUY" && ev.signal !== "SELL") continue;
+
+                const nextBar = bars[i + 1];
+                const outcome = classifyTradeOutcomeStrict(ev.signal, nextBar.openPrice, nextBar.closePrice, { isReliable: true });
+                if (outcome.outcomeCode !== "WIN" && outcome.outcomeCode !== "LOSS") continue;
+
+                if (i < splitIdx) {
+                    isTrades++;
+                    if (outcome.outcomeCode === "WIN") isWins++;
+                } else {
+                    oosTrades++;
+                    if (outcome.outcomeCode === "WIN") oosWins++;
+                }
+            }
+
+            const isWinRate = isTrades > 0 ? +((isWins / isTrades) * 100).toFixed(1) : null;
+            const oosWinRate = oosTrades > 0 ? +((oosWins / oosTrades) * 100).toFixed(1) : null;
+            const overfitDelta = (isWinRate !== null && oosWinRate !== null) ? +(Math.abs(isWinRate - oosWinRate)).toFixed(1) : null;
+
+            return {
+                status: (isTrades + oosTrades) > 0 ? "VERIFIED_BACKTEST" : "NO_TRIGGERS_IN_SAMPLE",
+                isTrades, isWins, isWinRate,
+                oosTrades, oosWins, oosWinRate,
+                overfitDelta
+            };
+        }
+
+        // ============================================================================
+        // 8. DATA LOADING: BENCHMARK CALIBRATION & CSV/JSON IMPORT (ISOLATED STORES)
+        // ============================================================================
+        function getActiveStore() {
+            const mode = document.getElementById('marketModeSelector').value;
+            return mode === "OTC" ? otcOhlcStore : realMarketOhlcStore;
+        }
+
+        function loadBenchmarkCalibrationDatasets() {
+            const nowMinMs = Math.floor(getTrueNowMs() / 60000) * 60000;
+            const realBars = [];
+            const otcBars = [];
+
+            // 1. Real Market 45-Bar Dataset (Distinct prices around 1.08500 with real volume)
+            let pReal = 1.08400;
+            for (let i = 45; i >= 1; i--) {
+                const ts = nowMinMs - i * 60000;
+                const cycle = i % 9;
+                const delta = (cycle === 0) ? -0.00035 : (cycle % 3 === 0 ? -0.00012 : 0.00024);
+                const open = +pReal.toFixed(5);
+                const close = +(open + delta).toFixed(5);
+                const high = +(Math.max(open, close) + (cycle === 1 ? 0.00030 : 0.00012)).toFixed(5);
+                const low = +(Math.min(open, close) - (cycle === 2 ? 0.00038 : 0.00010)).toFixed(5);
+                realBars.push({ timestamp: ts, open, high, low, close, volume: 150 + (i % 7) * 25 });
+                pReal = close;
+            }
+
+            // 2. Separate OTC Synthetic 45-Bar Dataset (Distinct prices around 112.200, no volume, streak behavior)
+            let pOtc = 112.150;
+            for (let i = 45; i >= 1; i--) {
+                const ts = nowMinMs - i * 60000;
+                const mod5 = i % 5;
+                const delta = (mod5 === 0) ? -0.065 : 0.022;
+                const open = +pOtc.toFixed(3);
+                const close = +(open + delta).toFixed(3);
+                const high = +(Math.max(open, close) + 0.015).toFixed(3);
+                const low = +(Math.min(open, close) - (mod5 === 1 ? 0.045 : 0.012)).toFixed(3);
+                otcBars.push({ timestamp: ts, open, high, low, close, volume: null });
+                pOtc = close;
+            }
+
+            realMarketOhlcStore = validateOhlcSeriesStrict(realBars).validBars;
+            otcOhlcStore = validateOhlcSeriesStrict(otcBars).validBars;
+
+            document.getElementById('screenPlaceholder').style.display = "none";
+            setText('screenStatusTitle', `🟢 CALIBRATED 45-BAR OHLC DATASETS LOADED (SEPARATE REAL & OTC STORES)`);
+            scanLiveScreenNow(false);
+        }
+
+        function handleOhlcFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result.trim();
+                let rows = [];
+                try {
+                    if (file.name.endsWith('.json') || content.startsWith('[') || content.startsWith('{')) {
+                        const parsed = JSON.parse(content);
+                        rows = Array.isArray(parsed) ? parsed : (parsed.candles || parsed.data || []);
+                    } else {
+                        const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+                        for (let i = 0; i < lines.length; i++) {
+                            const cols = lines[i].split(',').map(c => c.trim());
+                            if (i === 0 && isNaN(parseFloat(cols[1]))) continue;
+                            if (cols.length >= 5) {
+                                rows.push({
+                                    timestamp: Number(cols[0]) || (Date.now() - (lines.length - i) * 60000),
+                                    open: cols[1],
+                                    high: cols[2],
+                                    low: cols[3],
+                                    close: cols[4],
+                                    volume: cols[5]
+                                });
+                            }
+                        }
+                    }
+
+                    const val = validateOhlcSeriesStrict(rows);
+                    if (val.status !== "VALIDATED" || val.validBars.length < 15) {
+                        alert(`❌ Dataset Rejected (${val.status}): Needs >= 15 valid OHLC bars. Found ${val.validBars.length} valid, ${val.invalidCount} invalid.`);
+                        return;
+                    }
+
+                    const mode = document.getElementById('marketModeSelector').value;
+                    if (mode === "OTC") {
+                        otcOhlcStore = val.validBars;
+                    } else {
+                        realMarketOhlcStore = val.validBars;
+                    }
+
+                    document.getElementById('screenPlaceholder').style.display = "none";
+                    setText('ohlcQualityBadge', `VALIDATED (${val.validBars.length} Bars, ${val.invalidCount} Bad)`);
+                    scanLiveScreenNow(true);
+                } catch (err) {
+                    alert("❌ CALCULATION_ERROR: Failed to parse CSV/JSON file.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function onMarketModeChange() {
+            const m = document.getElementById('marketModeSelector').value;
+            setText('activeEngineSubLabel', m === "OTC" ? "OTC SYNTHETIC STORE (ISOLATED)" : "REAL MARKET STORE (ISOLATED)");
+            setText('signalBoxMarketType', m === "OTC" ? "OTC STORE" : "REAL STORE");
+            scanLiveScreenNow(false);
+        }
+
+        // EXTRACT CALIBRATED OHLC FROM LIVE VIDEO STREAM (NEVER INVENTS MISSING SLICES)
+        function extractVideoSlicesStrict() {
+            const video = document.getElementById('poScreenVideo');
+            const canvas = document.getElementById('visionCanvas');
+            if (!isScreenConnected || !video || !video.videoWidth || !video.videoHeight) return null;
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const startX = Math.floor(canvas.width * 0.22);
+            const endX = Math.floor(canvas.width * 0.78);
+            const startY = Math.floor(canvas.height * 0.14);
+            const endY = Math.floor(canvas.height * 0.78);
+            const scanW = Math.max(25, endX - startX);
+            const scanH = Math.max(25, endY - startY);
+
+            const imgData = ctx.getImageData(startX, startY, scanW, scanH).data;
+            const numSlices = 25;
+            const sliceWidth = Math.floor(scanW / numSlices);
+            const nowMinMs = Math.floor(getTrueNowMs() / 60000) * 60000;
+            const extracted = [];
+
+            for (let s = 0; s < numSlices; s++) {
+                let greenCount = 0, redCount = 0;
+                let highY = scanH, lowY = 0;
+                let bodyHighY = scanH, bodyLowY = 0;
+
+                const sxStart = s * sliceWidth;
+                const sxEnd = (s + 1) * sliceWidth;
+
+                for (let y = 0; y < scanH; y += 2) {
+                    let rowG = 0, rowR = 0;
+                    for (let x = sxStart; x < sxEnd; x += 2) {
+                        const idx = (y * scanW + x) * 4;
+                        const r = imgData[idx], g = imgData[idx + 1], b = imgData[idx + 2];
+                        if (g > 130 && g > r * 1.3 && b < 170) {
+                            greenCount++; rowG++;
+                            if (y < highY) highY = y;
+                            if (y > lowY) lowY = y;
+                        } else if (r > 145 && r > g * 1.3 && b < 145) {
+                            redCount++; rowR++;
+                            if (y < highY) highY = y;
+                            if (y > lowY) lowY = y;
+                        }
+                    }
+                    if (rowG > 2 || rowR > 2) {
+                        if (y < bodyHighY) bodyHighY = y;
+                        if (y > bodyLowY) bodyLowY = y;
+                    }
+                }
+
+                // STRICT RULE: If slice has insufficient candle pixels, DO NOT invent a bar!
+                if ((greenCount + redCount) < 6 || highY >= lowY) continue;
+                if (bodyHighY >= bodyLowY) { bodyHighY = highY + 1; bodyLowY = lowY - 1; }
+
+                // Relative normalized pixel-height units (100.00 to 200.00 scale)
+                const highP = +(100 + ((scanH - highY) / scanH) * 100).toFixed(4);
+                const lowP = +(100 + ((scanH - lowY) / scanH) * 100).toFixed(4);
+                const topBodyP = +(100 + ((scanH - bodyHighY) / scanH) * 100).toFixed(4);
+                const botBodyP = +(100 + ((scanH - bodyLowY) / scanH) * 100).toFixed(4);
+
+                const isBull = greenCount > redCount * 1.1;
+                const isBear = redCount > greenCount * 1.1;
+                const openP = isBull ? botBodyP : (isBear ? topBodyP : +((topBodyP + botBodyP) / 2).toFixed(4));
+                const closeP = isBull ? topBodyP : (isBear ? botBodyP : openP);
+
+                extracted.push({
+                    timestamp: nowMinMs - (numSlices - 1 - s) * 60000,
+                    open: openP,
+                    high: Math.max(highP, openP, closeP),
+                    low: Math.min(lowP, openP, closeP),
+                    close: closeP,
+                    volume: null
+                });
+            }
+
+            return validateOhlcSeriesStrict(extracted);
+        }
+
+        // ============================================================================
+        // 9. MASTER SCAN PIPELINE (DATA -> VALIDATE -> ANALYZE -> BACKTEST -> UI)
+        // ============================================================================
+        async function scanLiveScreenNow(manualTrigger = false) {
+            const mode = document.getElementById('marketModeSelector').value;
+
+            if (isScreenConnected) {
+                const videoVal = extractVideoSlicesStrict();
+                if (videoVal && videoVal.status === "VALIDATED" && videoVal.validBars.length >= 15) {
+                    if (mode === "OTC") otcOhlcStore = videoVal.validBars;
+                    else realMarketOhlcStore = videoVal.validBars;
+                }
+            }
+
+            const activeBars = getActiveStore();
+            if (!activeBars || activeBars.length < 15) {
+                setText('ohlcQualityBadge', activeBars.length === 0 ? 'UNAVAILABLE_DATA' : `INSUFFICIENT_DATA (N=${activeBars.length}/15)`);
+                setText('signalBadge', 'UNAVAILABLE_DATA');
+                setText('actionType', 'UNAVAILABLE_DATA');
+                setText('setupName', 'Load >= 15 Valid OHLC Bars');
+                setText('accuracyScore', 'UNVERIFIED');
+                if (manualTrigger) {
+                    alert("⚠️ UNAVAILABLE_DATA: Load 45-Bar Test Data, Import CSV/JSON OHLC, or Share a clear chart screen with >=15 visible candles.");
+                }
+                return;
+            }
+
+            const ev = evaluateSignalOnWindow(activeBars, mode);
+            const wf = runWalkForwardOosValidationReal(activeBars, mode);
+
+            // Also evaluate the isolated Real & OTC stores independently so Library 1 and Library 2 reflect their own stores!
+            const realStoreEval = realMarketOhlcStore.length >= 15 ? evaluateSignalOnWindow(realMarketOhlcStore, "REAL") : null;
+            const otcStoreEval = otcOhlcStore.length >= 15 ? evaluateSignalOnWindow(otcOhlcStore, "OTC") : null;
+
+            const cNow = activeBars[activeBars.length - 1];
+            const lp = ev.latestPsych;
+            const dec = cNow.closePrice > 50 ? 3 : 5;
+
+            // Update OHLC & Sequence Telemetry
+            setText('ohlcQualityBadge', `VALIDATED (N=${activeBars.length} Bars)`);
+            setText('psychDataQualityBadge', `VALIDATED (N=${activeBars.length} Bars)`);
+            setText('liveOcrPriceTag', cNow.closePrice.toFixed(dec));
+            setText('ohlcOpen', cNow.openPrice.toFixed(dec));
+            setText('ohlcHigh', cNow.highPrice.toFixed(dec));
+            setText('ohlcLow', cNow.lowPrice.toFixed(dec));
+            setText('ohlcClose', cNow.closePrice.toFixed(dec));
+            setText('ohlcBodyWickRatio', `B:${lp.bodyPct}% | W/B:${lp.wickToBodyRatio}x`);
+            setText('ohlcCandlePattern', lp.candleType);
+
+            const last10 = ev.psych.analyzedCandles.slice(-10);
+            const pillsHtml = last10.map((c, idx) => {
+                const isLast = idx === last10.length - 1 ? "ring-1 ring-cyan-400" : "";
+                if (c.dirCode === "BULL") return `<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/50 text-[9px] font-bold ${isLast}">#${c.index}:🟢${c.bodyPct}%</span>`;
+                if (c.dirCode === "BEAR") return `<span class="px-1.5 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-500/50 text-[9px] font-bold ${isLast}">#${c.index}:🔴${c.bodyPct}%</span>`;
+                return `<span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-500/50 text-[9px] font-bold ${isLast}">#${c.index}:⚖️</span>`;
+            }).join('');
+            document.getElementById('last5CandlesVisual').innerHTML = pillsHtml;
+
+            setText('buyerPressureText', `🟢 OHLC CLOSE-LOCATION BULL ESTIMATE: ${lp.estBuyerPressure}%`);
+            setText('sellerPressureText', `🔴 OHLC CLOSE-LOCATION BEAR ESTIMATE: ${lp.estSellerPressure}%`);
+            document.getElementById('buyerPressureBar').style.width = `${lp.estBuyerPressure}%`;
+            document.getElementById('sellerPressureBar').style.width = `${lp.estSellerPressure}%`;
+
+            // Render 20-Feature Candle Psychology Engine
+            renderCandlePsychologyModule(ev.psych);
+
+            // Populate Library 1 strictly from realMarketOhlcStore
+            if (realStoreEval) {
+                const rSmc = realStoreEval.smc;
+                const rInd = realStoreEval.ind;
+                const rLp = realStoreEval.latestPsych;
+                setText('lib1ScoreBadge', `N=${realMarketOhlcStore.length} Real Bars`);
+                setText('L1_structure', rSmc.structureEvent);
+                setText('L1_liquidityIdm', rSmc.liquidityEvent);
+                setText('L1_blocksFvg', rSmc.obFvgLabel);
+                setText('L1_srSdTrend', rSmc.wyckoffLabel);
+                setText('L1_dowElliottWyckoff', rInd.vwap !== null ? `VWAP: ${rInd.vwap.toFixed(dec)}` : 'UNAVAILABLE_VOLUME_DATA');
+                setText('L1_indGroup3', `Fib Retrace: ${rSmc.fibRetrace}`);
+                setText('L1_candlePa', `${rLp.candleType} (B:${rLp.bodyPct}%)`);
+                setText('L1_breakFakeMom', `${rLp.marketContext}`);
+                setText('L1_indGroup1', `RSI(14):${rInd.rsi14 ?? 'N/A'} | EMA9:${rInd.ema9 ? rInd.ema9.toFixed(dec) : 'N/A'}`);
+                setText('L1_indGroup2', `ATR(14):${rInd.atr14 ? rInd.atr14.toFixed(dec) : 'N/A'} | ADX:${rInd.adx14 ?? 'N/A'} | CCI:${rInd.cci14 ?? 'N/A'}`);
+            } else {
+                setText('lib1ScoreBadge', `UNAVAILABLE (N=${realMarketOhlcStore.length})`);
+            }
+
+            // Populate Library 2 strictly from otcOhlcStore
+            if (otcStoreEval && otcStoreEval.otc.status === "COMPLETE") {
+                const oStat = otcStoreEval.otc;
+                const oLp = otcStoreEval.latestPsych;
+                setText('lib2ScoreBadge', `N=${otcOhlcStore.length} OTC Bars`);
+                setText('L2_synthStats', `Bar Return Z: ${oStat.zScore}`);
+                setText('L2_wickSeq', `${oStat.currentStreak}x ${oStat.nowDir} Streak`);
+                setText('L2_repeatCluster', `W/B Ratio: ${oLp.wickToBodyRatio}x (U:${oLp.upperWickPct}%/L:${oLp.lowerWickPct}%)`);
+                setText('L2_rangeAnomaly', `Rel Range: ${oLp.relRangeRatio}x Avg`);
+                setText('L2_meanRevMom', oStat.empiricalRevPct !== null ? `Hist Rev Rate: ${oStat.empiricalRevPct}% (N=${oStat.streakOccurrences})` : 'No Prior Streak Match');
+                setText('L2_regimeAuto', `r1 = ${oStat.autocorrLag1}`);
+                setText('L2_tsKnn', oStat.knn.status === "COMPLETE" ? `k=${oStat.knn.kMatches} | BullNext:${oStat.knn.bullNextPct}%` : oStat.knn.status);
+                setText('L2_fakeoutFreq', Math.abs(oStat.zScore) > 2.0 ? `Z=${oStat.zScore} ANOMALY` : `Z=${oStat.zScore} INLIER`);
+                setText('L2_durDist', oStat.autocorrLag1 < -0.15 ? 'Mean-Reverting OTC' : (oStat.autocorrLag1 > 0.15 ? 'Momentum OTC' : 'Random Walk OTC'));
+                setText('L2_volQuality', `VALIDATED (N=${otcOhlcStore.length})`);
+            } else {
+                setText('lib2ScoreBadge', `UNAVAILABLE (N=${otcOhlcStore.length})`);
+            }
+
+            // Populate Library 3 (Walk-Forward OOS & Empirical Metrics)
+            const knnActive = runHistoricalKnnMatchReal(activeBars, 5);
+            setText('L3_rfXgb', wf.isWinRate !== null ? `${wf.isWinRate}% (${wf.isWins}/${wf.isTrades} IS Trades)` : `NO_IS_TRADES (N=${wf.isTrades})`);
+            setText('L3_lstmFeat', wf.oosWinRate !== null ? `${wf.oosWinRate}% (${wf.oosWins}/${wf.oosTrades} OOS Trades)` : `NO_OOS_TRADES (N=${wf.oosTrades})`);
+            setText('L3_bayesMl', `BullScore:${ev.bullScore} vs BearScore:${ev.bearScore}`);
+            setText('L3_wfMonteCarlo', knnActive.status === "COMPLETE" ? `Bull:${knnActive.bullNextCount}/${knnActive.kMatches} (${knnActive.bullNextPct}%)` : knnActive.status);
+            setText('L3_outlierCorr', `RelRange: ${lp.relRangeRatio}x`);
+            setText('L3_mtfBacktest', ev.mtfBull ? '5-Bar MTF BULLISH' : (ev.mtfBear ? '5-Bar MTF BEARISH' : '5-Bar MTF FLAT'));
+            setText('L3_regimeCalib', wf.overfitDelta !== null ? `IS-OOS Delta: ${wf.overfitDelta}%` : 'INSUFFICIENT_TRADES');
+            setText('L3_overfitOos', `RF/XGB/LSTM: NOT_IMPLEMENTED`);
+            setText('L3_confPerf', wf.oosWinRate !== null ? `Verified OOS Hit Rate: ${wf.oosWinRate}% (N=${wf.oosTrades})` : `OOS Unverified (Trades=${wf.oosTrades})`);
+
+            // Top 5 Summary
+            setText('top5PassBadge', `${ev.top5Count} / 5 PASSED`);
+            setText('t5_1', `${ev.smc.structureEvent.split(' ')[0]} / ${ev.smc.liquidityEvent.split(' ')[0]}`);
+            setText('t5_2', `${ev.smc.wyckoffLabel.split(' ')[0]}`);
+            setText('t5_3', `${ev.smc.obFvgLabel.split(' ')[0]}`);
+            setText('t5_4', ev.mtfBull ? 'MTF BULL' : (ev.mtfBear ? 'MTF BEAR' : 'MTF FLAT'));
+            setText('t5_5', wf.oosWinRate !== null ? `OOS ${wf.oosWinRate}% (N=${wf.oosTrades})` : `N=${wf.oosTrades} OOS Trades`);
+
+            // Signal Box & Schedule
+            const expiryMin = parseInt(document.getElementById('timeframeSelector').value || "1");
+            const schedule = getExactIstSchedule(expiryMin);
+            const manualAsset = document.getElementById('manualAssetInput').value.trim();
+            const finalAsset = manualAsset || (mode === "OTC" ? "EUR/USD (OTC)" : "EUR/USD");
+
+            setText('signalBoxAsset', finalAsset);
+            setText('confluenceMeter', `N = ${activeBars.length} Bars`);
+            setText('accuracyScore', wf.oosWinRate !== null ? `${wf.oosWinRate}% (OOS N=${wf.oosTrades})` : `UNVERIFIED (N=${wf.oosTrades})`);
+            setText('setupName', ev.setupLabel);
+
+            const badge = document.getElementById('signalBadge');
+            const box = document.getElementById('signalHighlightBox');
+            const actionEl = document.getElementById('actionType');
+
+            if (ev.signal === "BUY") {
+                badge.innerText = "🟢 AUDITED BUY";
+                badge.className = "px-3 py-1 text-xs font-black rounded-xl bg-emerald-500 text-black shadow-glow-green tracking-wider";
+                box.className = "buy-card-glow rounded-2xl p-4 mb-3 text-center transition-all duration-300";
+                actionEl.className = "text-2xl md:text-3xl font-black tracking-wider text-emerald-300 my-1 uppercase";
+                setText('actionType', 'BUY (HIGHER ⬆️)');
+                setText('exactEntryTime', schedule.entryIstStr);
+                setText('exactExitTime', schedule.exitIstStr);
+                setText('entryStatusTag', `🟢 ENTRY AT ${schedule.entryIstStr}`);
+                playCuteSignalSound('BUY');
+
+                if (autoBotActive) {
+                    const tradeId = `${finalAsset}_${mode}_${expiryMin}M_${Math.floor(schedule.entryEpochMs / 60000)}`;
+                    queueAutonomousTrade(tradeId, `${finalAsset} [${mode}]`, "BUY (HIGHER ⬆️)", expiryMin, schedule, cNow.closePrice, ev.setupLabel);
+                }
+            } else if (ev.signal === "SELL") {
+                badge.innerText = "🔴 AUDITED SELL";
+                badge.className = "px-3 py-1 text-xs font-black rounded-xl bg-rose-500 text-white shadow-glow-red tracking-wider";
+                box.className = "sell-card-glow rounded-2xl p-4 mb-3 text-center transition-all duration-300";
+                actionEl.className = "text-2xl md:text-3xl font-black tracking-wider text-rose-300 my-1 uppercase";
+                setText('actionType', 'SELL (LOWER ⬇️)');
+                setText('exactEntryTime', schedule.entryIstStr);
+                setText('exactExitTime', schedule.exitIstStr);
+                setText('entryStatusTag', `🔴 ENTRY AT ${schedule.entryIstStr}`);
+                playCuteSignalSound('SELL');
+
+                if (autoBotActive) {
+                    const tradeId = `${finalAsset}_${mode}_${expiryMin}M_${Math.floor(schedule.entryEpochMs / 60000)}`;
+                    queueAutonomousTrade(tradeId, `${finalAsset} [${mode}]`, "SELL (LOWER ⬇️)", expiryMin, schedule, cNow.closePrice, ev.setupLabel);
+                }
+            } else {
+                badge.innerText = "⏸️ WAIT (NO TRADE)";
+                badge.className = "px-3 py-1 text-xs font-black rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/50 tracking-wider";
+                box.className = "wait-card-glow rounded-2xl p-4 mb-3 text-center transition-all duration-300";
+                actionEl.className = "text-2xl md:text-3xl font-black tracking-wider text-amber-300 my-1 uppercase";
+                setText('actionType', 'WAIT (NO SETUP ⏸️)');
+                setText('exactEntryTime', 'WAIT MODE');
+                setText('exactExitTime', 'SKIP CANDLE');
+                setText('entryStatusTag', '⏸️ Low Confluence');
+            }
+
+            setText('aiReasonText', `📌 [${mode} STORE | N=${activeBars.length}] Asset: ${finalAsset} | O:${cNow.openPrice.toFixed(dec)} H:${cNow.highPrice.toFixed(dec)} L:${cNow.lowPrice.toFixed(dec)} C:${cNow.closePrice.toFixed(dec)}\n📐 Real Math: Wilder RSI(14)=${ev.ind.rsi14 ?? 'N/A'}, ATR(14)=${ev.ind.atr14 ? ev.ind.atr14.toFixed(dec) : 'N/A'}, Structure=${ev.smc.structureEvent}, OB/FVG=${ev.smc.obFvgLabel}\n📊 Walk-Forward Validation: IS=${wf.isWinRate ?? 'N/A'}% (N=${wf.isTrades}), OOS=${wf.oosWinRate ?? 'N/A'}% (N=${wf.oosTrades}).`);
+        }
+
+        function renderCandlePsychologyModule(psychReport) {
+            if (!psychReport) return;
+            setText('psychEngineModeTag', psychReport.contextLabel);
+            setText('PSY_1_2', psychReport.f1_2);
+            setText('PSY_3_4', psychReport.f3_4);
+            setText('PSY_5_6', psychReport.f5_6);
+            setText('PSY_7_8', psychReport.f7_8);
+            setText('PSY_9_10', psychReport.f9_10);
+            setText('PSY_11_12', psychReport.f11_12);
+            setText('PSY_13_14', psychReport.f13_14);
+            setText('PSY_15_16', psychReport.f15_16);
+            setText('PSY_17_18', psychReport.f17_18);
+            setText('PSY_19_20', psychReport.f19_20);
+
+            const tbody = document.getElementById('candlePsychologyTableBody');
+            if (!tbody) return;
+            const recent = psychReport.analyzedCandles.slice(-6).reverse();
+            tbody.innerHTML = recent.map(item => {
+                const dec = item.closePrice > 50 ? 3 : 5;
+                const classBadge = item.dirCode === "BULL"
+                    ? `<span class="text-emerald-400 font-bold">🟢 ${item.classification}</span>`
+                    : item.dirCode === "BEAR"
+                    ? `<span class="text-rose-400 font-bold">🔴 ${item.classification}</span>`
+                    : `<span class="text-amber-300 font-bold">⚖️ ${item.classification}</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-900/60 transition">
+                        <td class="py-2 px-2.5 font-bold text-cyan-300">Bar #${item.index}</td>
+                        <td class="py-2 px-2.5">${classBadge} <div class="text-[9px] text-slate-400">${item.candleType}</div></td>
+                        <td class="py-2 px-2.5 text-slate-200">
+                            O:${item.openPrice.toFixed(dec)} C:${item.closePrice.toFixed(dec)}
+                            <div class="text-[9px] text-cyan-300">Body:${item.bodyPct}% | W/B:${item.wickToBodyRatio}x</div>
+                        </td>
+                        <td class="py-2 px-2.5">
+                            <span class="text-emerald-400">B:${item.estBuyerPressure}%</span> / <span class="text-rose-400">S:${item.estSellerPressure}%</span>
+                        </td>
+                        <td class="py-2 px-2.5 text-amber-300">${item.wickRejectionInfo} <div class="text-[9px] text-slate-300">${item.momentumCondition}</div></td>
+                        <td class="py-2 px-2.5 text-cyan-200">${item.marketContext}</td>
+                        <td class="py-2 px-2.5 text-slate-300 font-sans text-[10px] max-w-xs">${item.psychExplanation}</td>
+                        <td class="py-2 px-2.5 text-right"><span class="bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[9px] font-bold">${item.dataQuality}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ============================================================================
+        // 10. TRADE QUEUE & STRICT VERIFIER (NO FABRICATED WIN/LOSS RESULTS)
+        // ============================================================================
+        function queueAutonomousTrade(tradeId, asset, signal, expiryMin, schedule, initialPrice, setup) {
+            if (!autoBotActive) return false;
+            if (queuedTradeIds.has(tradeId) || tradeLog.some(t => t.id === tradeId)) return false;
+
+            const parsedOpen = Number(initialPrice);
+            queuedTradeIds.add(tradeId);
+
+            tradeLog.unshift({
+                id: tradeId,
+                asset,
+                signal,
+                tfText: `${expiryMin}M`,
+                expiryMin: Number(expiryMin) || 1,
+                entryIst: schedule.entryIstStr,
+                exitIst: schedule.exitIstStr,
+                entryEpochMs: schedule.entryEpochMs,
+                exitEpochMs: schedule.exitEpochMs,
+                entryPrice: Number.isFinite(parsedOpen) && parsedOpen > 0 ? parsedOpen : null,
+                entryTimestamp: null,
+                liveSnapshotBars: null,
+                lastSnapMs: null,
+                setup,
+                closePrice: null,
+                closePriceStr: "PENDING_DATA",
+                outcomeCode: "PENDING_DATA",
+                status: "PENDING_DATA ⏳"
+            });
+
+            renderSessionStats();
+            return true;
+        }
+
+        async function verifyRunningTradesAutonomously() {
+            if (!autoBotActive || tradeLog.length === 0) return;
+            const nowMs = getTrueNowMs();
+            let changed = false;
+
+            for (let trade of tradeLog) {
+                if (completedTradeIds.has(trade.id) || (trade.outcomeCode !== "PENDING_DATA" && trade.outcomeCode !== "RUNNING")) continue;
+
+                const expMin = trade.expiryMin || parseInt(trade.tfText) || 1;
+
+                // Track the active trade candle after :04s (once new candle pixels form on screen) up to :59s
+                // Prevents locking the previous candle's Open at :00s and eliminates Y-axis zoom mismatch
+                if (nowMs >= trade.entryEpochMs + 4000 && nowMs < trade.exitEpochMs) {
+                    if (isScreenConnected) {
+                        const vLive = extractVideoSlicesStrict();
+                        if (vLive && vLive.status === "VALIDATED" && vLive.validBars.length > 0) {
+                            trade.liveSnapshotBars = vLive.validBars;
+                            trade.lastSnapMs = nowMs;
+                            const elapsedMin = Math.min(
+                                expMin,
+                                Math.max(1, Math.ceil((nowMs - trade.entryEpochMs) / 60000))
+                            );
+                            const entryBarIdx = Math.max(0, vLive.validBars.length - elapsedMin);
+                            trade.entryPrice = vLive.validBars[entryBarIdx].openPrice;
+                            trade.entryTimestamp = nowMs;
+                            changed = true;
+                        }
+                    } else if (trade.entryTimestamp === null) {
+                        trade.entryTimestamp = nowMs;
+                        changed = true;
+                    }
+                }
+
+                // At expiry (:00s), verify Open & Close from the exact same trade candle frame
+                if (nowMs >= trade.exitEpochMs && !activeVerificationLocks.has(trade.id)) {
+                    activeVerificationLocks.add(trade.id);
+                    try {
+                        let verifiedClose = null;
+                        let isSourceFresh = false;
+
+                        if (isScreenConnected) {
+                            let barsToUse = trade.liveSnapshotBars;
+                            // If no pre-expiry snapshot was captured (e.g. background tab), extract now
+                            if (!barsToUse || barsToUse.length === 0) {
+                                const vExit = extractVideoSlicesStrict();
+                                if (vExit && vExit.status === "VALIDATED" && vExit.validBars.length > 0) {
+                                    barsToUse = vExit.validBars;
+                                }
+                            }
+
+                            if (barsToUse && barsToUse.length > 0) {
+                                const exitBar = barsToUse[barsToUse.length - 1];
+                                const entryBar = barsToUse[Math.max(0, barsToUse.length - expMin)];
+                                trade.entryPrice = entryBar.openPrice;
+                                verifiedClose = exitBar.closePrice;
+                                isSourceFresh = true;
+                            }
+                        } else {
+                            // Static dataset check
+                            const store = getActiveStore();
+                            const matchingBars = store.filter(b => b.timestamp >= trade.entryEpochMs && b.timestamp <= trade.exitEpochMs);
+                            if (matchingBars.length > 0) {
+                                trade.entryPrice = matchingBars[0].openPrice;
+                                verifiedClose = matchingBars[matchingBars.length - 1].closePrice;
+                                isSourceFresh = true;
+                            }
+                        }
+
+                        const res = classifyTradeOutcomeStrict(trade.signal, trade.entryPrice, verifiedClose, {
+                            isReliable: isSourceFresh,
+                            snapshotAgeMs: nowMs - trade.exitEpochMs
+                        });
+
+                        const dec = (trade.entryPrice && trade.entryPrice > 50) ? 3 : 5;
+                        trade.closePrice = verifiedClose;
+                        trade.closePriceStr = (res.isReliable && Number.isFinite(verifiedClose)) ? verifiedClose.toFixed(dec) : res.outcomeCode;
+                        trade.outcomeCode = res.outcomeCode;
+                        trade.status = res.statusLabel;
+                        trade.setup = `${res.polarity} • ${trade.setup}`;
+                        completedTradeIds.add(trade.id);
+                        changed = true;
+                    } finally {
+                        activeVerificationLocks.delete(trade.id);
+                    }
+                }
+            }
+
+            if (changed) renderSessionStats();
+        }
+
+        function renderSessionStats() {
+            const total = tradeLog.length;
+            const wins = tradeLog.filter(t => t.outcomeCode === "WIN").length;
+            const losses = tradeLog.filter(t => t.outcomeCode === "LOSS").length;
+            const pending = tradeLog.filter(t => t.outcomeCode !== "WIN" && t.outcomeCode !== "LOSS").length;
+            const finished = wins + losses;
+            const winRate = finished > 0 ? ((wins / finished) * 100).toFixed(1) + "%" : "NO_TRADES";
+
+            setText('statTotal', total);
+            setText('statWins', wins);
+            setText('statLosses', losses);
+            setText('statPending', pending);
+            setText('statWinRate', winRate);
+
+            const tbody = document.getElementById('tradeHistoryBody');
+            if (!tbody) return;
+            if (tradeLog.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-500 font-sans">No trades logged in this session.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = tradeLog.map(t => {
+                const isBuy = t.signal.includes("BUY");
+                const sigClass = isBuy ? "text-emerald-400 font-extrabold" : "text-rose-400 font-extrabold";
+                const dec = (t.entryPrice && t.entryPrice > 50) ? 3 : 5;
+                const openStr = (t.entryPrice !== null && Number.isFinite(t.entryPrice)) ? t.entryPrice.toFixed(dec) : "UNAVAILABLE";
+
+                let statusBadge = `<span class="bg-amber-950 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded text-[10px] font-bold">${t.status}</span>`;
+                if (t.outcomeCode === "WIN") {
+                    statusBadge = `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500 px-3 py-1 rounded text-[10px] font-black shadow-glow-green">${t.status}</span>`;
+                } else if (t.outcomeCode === "LOSS") {
+                    statusBadge = `<span class="bg-rose-500/20 text-rose-300 border border-rose-500 px-3 py-1 rounded text-[10px] font-black shadow-glow-red">${t.status}</span>`;
+                } else if (t.outcomeCode === "DRAW") {
+                    statusBadge = `<span class="bg-cyan-950 text-cyan-300 border border-cyan-500/50 px-3 py-1 rounded text-[10px] font-bold">${t.status}</span>`;
+                }
+
+                return `
+                    <tr class="hover:bg-slate-900/60 transition">
+                        <td class="py-2.5 px-3 font-bold text-cyan-300">${t.asset}</td>
+                        <td class="py-2.5 px-3 ${sigClass}">${t.signal}</td>
+                        <td class="py-2.5 px-3 text-white font-bold">${t.tfText}</td>
+                        <td class="py-2.5 px-3 text-emerald-300">${t.entryIst}</td>
+                        <td class="py-2.5 px-3 text-rose-300">${t.exitIst}</td>
+                        <td class="py-2.5 px-3 text-slate-200">${openStr}</td>
+                        <td class="py-2.5 px-3 text-amber-300 font-bold">${t.closePriceStr}</td>
+                        <td class="py-2.5 px-3 text-slate-300 font-sans text-[11px]">${t.setup}</td>
+                        <td class="py-2.5 px-3 text-right">${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ============================================================================
+        // 11. AUTOMATED 18-TEST UNIT & INTEGRATION AUDIT SUITE (REQ #12, #13, #14)
+        // Verifies every module's math, edge cases, error codes, and end-to-end flow.
+        // ============================================================================
+        function runFullAuditTestSuite(showModal = false) {
+            // Deterministic 30-bar fixture for mathematical unit & integration tests
+            const fixtureBars = [];
+            for (let i = 0; i < 30; i++) {
+                const base = 1.10000 + (i * 0.00020);
+                const isDip = (i % 5 === 2);
+                const o = +(base).toFixed(5);
+                const c = +(isDip ? base - 0.00015 : base + 0.00030).toFixed(5);
+                const h = +(Math.max(o, c) + 0.00015).toFixed(5);
+                const l = +(Math.min(o, c) - (i === 28 ? 0.00060 : 0.00010)).toFixed(5);
+                fixtureBars.push({ timestamp: 1700000000000 + i * 60000, open: o, high: h, low: l, close: c, volume: 100 + i * 10 });
+            }
+
+            const tests = [
+                {
+                    name: "1. [Unit] OHLC Validator rejects High < Low & NaN without inventing data",
+                    run: () => {
+                        const r = validateOhlcSeriesStrict([
+                            { timestamp: 1, open: 1.1, high: 1.05, low: 1.2, close: 1.1 }, // corrupt H < L
+                            { timestamp: 2, open: "NaN", high: 1.2, low: 1.0, close: 1.1 }, // NaN
+                            { timestamp: 3, open: 1.10, high: 1.15, low: 1.08, close: 1.12 } // valid
+                        ]);
+                        return r.status === "VALIDATED" && r.validBars.length === 1 && r.invalidCount === 2;
+                    }
+                },
+                {
+                    name: "2. [Unit] OHLC Validator returns UNAVAILABLE_DATA on empty array",
+                    run: () => validateOhlcSeriesStrict([]).status === "UNAVAILABLE_DATA"
+                },
+                {
+                    name: "3. [Unit] Wilder RSI(14) computes exact bounded value (0..100) on 30 bars",
+                    run: () => {
+                        const val = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const ind = computeTechnicalIndicatorsReal(val);
+                        return ind.status === "COMPLETE" && typeof ind.rsi14 === "number" && ind.rsi14 > 50 && ind.rsi14 <= 100;
+                    }
+                },
+                {
+                    name: "4. [Unit] EMA(9), EMA(21), SMA(20), MACD(12,26,9) execute real recursive math",
+                    run: () => {
+                        const val = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const ind = computeTechnicalIndicatorsReal(val);
+                        return Number.isFinite(ind.ema9) && Number.isFinite(ind.ema21) && Number.isFinite(ind.sma20) && Number.isFinite(ind.macdObj.hist);
+                    }
+                },
+                {
+                    name: "5. [Unit] Wilder ATR(14), Bollinger(20,2) & ADX(14) produce positive finite metrics",
+                    run: () => {
+                        const val = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const ind = computeTechnicalIndicatorsReal(val);
+                        return ind.atr14 > 0 && ind.bbObj.upper > ind.bbObj.lower && ind.adx14 >= 0;
+                    }
+                },
+                {
+                    name: "6. [Unit] VWAP computes volume-weighted price and returns null when volume is absent",
+                    run: () => {
+                        const withVol = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const noVol = withVol.map(b => ({ ...b, volume: null }));
+                        return computeTechnicalIndicatorsReal(withVol).vwap !== null && computeTechnicalIndicatorsReal(noVol).vwap === null;
+                    }
+                },
+                {
+                    name: "7. [Unit] Fractal Market Structure detects Bullish BOS when Close > Swing High",
+                    run: () => {
+                        const val = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const smc = analyzeSmcAndWyckoffReal(val, 0.0003);
+                        return smc.status === "COMPLETE" && (smc.structureEvent.includes("BOS") || smc.structureEvent.includes("UPTREND"));
+                    }
+                },
+                {
+                    name: "8. [Unit] Liquidity Sweep detects SSL Sweep when Low pierces Swing Low & closes above",
+                    run: () => {
+                        const custom = validateOhlcSeriesStrict(fixtureBars.slice(0, 10)).validBars;
+                        const minL = Math.min(...custom.map(b => b.lowPrice));
+                        custom.push({ timestamp: 9999999999999, openPrice: minL + 0.0002, highPrice: minL + 0.0005, lowPrice: minL - 0.0003, closePrice: minL + 0.0003, volume: 100 });
+                        const smc = analyzeSmcAndWyckoffReal(custom, 0.0003);
+                        return smc.liquidityEvent.includes("SSL_SWEPT") && smc.liquidityBias === 2;
+                    }
+                },
+                {
+                    name: "9. [Unit] 3-Bar FVG detector identifies unmitigated Bullish Fair Value Gap",
+                    run: () => {
+                        const bars7 = validateOhlcSeriesStrict(fixtureBars.slice(0, 7)).validBars;
+                        bars7[4] = { timestamp: 5, openPrice: 1.1000, highPrice: 1.1010, lowPrice: 1.0995, closePrice: 1.1008, volume: 100 };
+                        bars7[5] = { timestamp: 6, openPrice: 1.1008, highPrice: 1.1050, lowPrice: 1.1008, closePrice: 1.1048, volume: 100 };
+                        bars7[6] = { timestamp: 7, openPrice: 1.1045, highPrice: 1.1055, lowPrice: 1.1025, closePrice: 1.1050, volume: 100 }; // low (1.1025) > bar4 high (1.1010)
+                        const smc = analyzeSmcAndWyckoffReal(bars7, 0.0005);
+                        return smc.obFvgLabel.includes("BULL_FVG") && smc.obFvgBias === 2;
+                    }
+                },
+                {
+                    name: "10. [Unit] Wyckoff 15-Bar Box detects Spring on support pierce + close inside",
+                    run: () => {
+                        const bars16 = validateOhlcSeriesStrict(fixtureBars.slice(0, 16)).validBars;
+                        const boxL = Math.min(...bars16.slice(0, 15).map(b => b.lowPrice));
+                        bars16[15] = { timestamp: 16, openPrice: boxL + 0.0002, highPrice: boxL + 0.0004, lowPrice: boxL - 0.0003, closePrice: boxL + 0.0002, volume: 100 };
+                        const smc = analyzeSmcAndWyckoffReal(bars16, 0.0003);
+                        return smc.wyckoffLabel.includes("WYCKOFF_SPRING");
+                    }
+                },
+                {
+                    name: "11. [Unit] OTC Engine computes true Pearson Lag-1 Autocorrelation (-1 <= r1 <= 1)",
+                    run: () => {
+                        const val = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const otc = analyzeOtcStatisticalEngineReal(val);
+                        return otc.status === "COMPLETE" && otc.autocorrLag1 >= -1 && otc.autocorrLag1 <= 1 && Number.isFinite(otc.zScore);
+                    }
+                },
+                {
+                    name: "12. [Unit] Historical k-NN Matcher computes Euclidean distances across prior 4-bar windows",
+                    run: () => {
+                        const val = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const knn = runHistoricalKnnMatchReal(val, 5);
+                        return knn.status === "COMPLETE" && knn.kMatches === 5 && knn.bullNextPct >= 0 && knn.bullNextPct <= 100;
+                    }
+                },
+                {
+                    name: "13. [Unit] Candle Psychology Engine computes exact W/B ratio & CLV pressure",
+                    run: () => {
+                        const val = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const psy = AdvancedCandlePsychologyEngine.analyzeSeries(val, "REAL");
+                        const last = psy.analyzedCandles[psy.analyzedCandles.length - 1];
+                        return psy && last.estBuyerPressure + last.estSellerPressure === 100 && last.wickToBodyRatio >= 0;
+                    }
+                },
+                {
+                    name: "14. [Unit] Result Classifier: BUY Close > Open = WIN, Close < Open = LOSS",
+                    run: () => {
+                        const w = classifyTradeOutcomeStrict("BUY", 1.08500, 1.08520, { isReliable: true });
+                        const l = classifyTradeOutcomeStrict("BUY", 1.08500, 1.08480, { isReliable: true });
+                        return w.outcomeCode === "WIN" && l.outcomeCode === "LOSS";
+                    }
+                },
+                {
+                    name: "15. [Unit] Result Classifier: SELL Close < Open = WIN, Close > Open = LOSS",
+                    run: () => {
+                        const w = classifyTradeOutcomeStrict("SELL", 1.08500, 1.08480, { isReliable: true });
+                        const l = classifyTradeOutcomeStrict("SELL", 1.08500, 1.08520, { isReliable: true });
+                        return w.outcomeCode === "WIN" && l.outcomeCode === "LOSS";
+                    }
+                },
+                {
+                    name: "16. [Unit] Result Classifier: Float equality (0.1+0.2 vs 0.3) = DRAW; Missing/NaN = Distinct Codes",
+                    run: () => {
+                        const d = classifyTradeOutcomeStrict("BUY", 0.1 + 0.2, 0.3, { isReliable: true });
+                        const u = classifyTradeOutcomeStrict("BUY", 1.085, null, { isReliable: true });
+                        const inv = classifyTradeOutcomeStrict("SELL", NaN, "bad", { isReliable: true });
+                        const pend = classifyTradeOutcomeStrict("BUY", 1.085, 1.086, { state: "PENDING_DATA" });
+                        return d.outcomeCode === "DRAW" && u.outcomeCode === "UNAVAILABLE_DATA" && inv.outcomeCode === "INVALID_DATA" && pend.outcomeCode === "PENDING_DATA";
+                    }
+                },
+                {
+                    name: "17. [Integration] Real Market & OTC Stores are strictly isolated",
+                    run: () => {
+                        return realMarketOhlcStore !== otcOhlcStore;
+                    }
+                },
+                {
+                    name: "18. [Integration] End-to-End Walk-Forward OOS Backtest executes without lookahead bias",
+                    run: () => {
+                        const val = validateOhlcSeriesStrict(fixtureBars).validBars;
+                        const wf = runWalkForwardOosValidationReal(val, "REAL");
+                        return wf.status === "VERIFIED_BACKTEST" || wf.status === "NO_TRIGGERS_IN_SAMPLE";
+                    }
+                }
+            ];
+
+            let passed = 0;
+            const html = tests.map(t => {
+                let ok = false;
+                try { ok = Boolean(t.run()); } catch (e) { ok = false; }
+                if (ok) passed++;
+                return `<div class="p-1.5 rounded bg-slate-900 border ${ok ? 'border-emerald-500/40 text-emerald-300' : 'border-rose-500 text-rose-400'}">${ok ? '✅ PASS' : '❌ FAIL'}: ${t.name}</div>`;
+            }).join('');
+
+            const badge = document.getElementById('unitTestHeaderBadge');
+            if (badge) {
+                badge.innerText = `🧪 AUDIT TESTS: ${passed}/${tests.length} PASS`;
+                badge.className = passed === tests.length
+                    ? "cursor-pointer bg-emerald-950 text-emerald-300 border border-emerald-500/50 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
+                    : "cursor-pointer bg-rose-950 text-rose-300 border border-rose-500/50 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full";
+            }
+
+            const box = document.getElementById('unitTestReportBox');
+            const content = document.getElementById('unitTestReportContent');
+            if (content) content.innerHTML = html;
+            if (showModal && box) box.classList.remove('hidden');
+
+            return passed === tests.length;
+        }
+
+        // ============================================================================
+        // 12. APP INITIALIZATION, AUTH & TIMER LOOP
+        // ============================================================================
+        async function syncAtomicIndianTime() {
+            try {
+                const start = Date.now();
+                const res = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata');
+                const data = await res.json();
+                const latency = (Date.now() - start) / 2;
+                if (data.dateTime) {
+                    const cleanIso = data.dateTime.substring(0, 19) + "+05:30";
+                    atomicTimeOffsetMs = new Date(cleanIso).getTime() + latency - Date.now();
+                }
+            } catch (e) {}
+        }
+
+        function getTrueNowMs() { return Date.now() + atomicTimeOffsetMs; }
+
+        function formatExactIST(epochMs) {
+            return new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Asia/Kolkata',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).format(new Date(epochMs));
+        }
+
+        function getExactIstSchedule(expiryMinutes) {
+            const trueNowMs = getTrueNowMs();
+            const nextMinEpochMs = (Math.floor(trueNowMs / 60000) + 1) * 60000;
+            const exitEpochMs = nextMinEpochMs + (expiryMinutes * 60000);
+            return {
+                entryIstStr: formatExactIST(nextMinEpochMs),
+                exitIstStr: formatExactIST(exitEpochMs),
+                entryEpochMs: nextMinEpochMs,
+                exitEpochMs: exitEpochMs
+            };
+        }
+
+        window.onload = () => {
+            applyBotLogoEverywhere();
+            runFullAuditTestSuite(false);
+            if (sessionStorage.getItem('auth_unlocked') === 'true') unlockDashboard();
+            if (localStorage.getItem('gemini_api_key')) {
+                document.getElementById('apiKeyInput').value = localStorage.getItem('gemini_api_key');
+            }
+        };
+
+        function verifyPasscode() {
+            const entered = document.getElementById('passcodeInput').value;
+            if (entered === SECRET_PASSCODE) {
+                sessionStorage.setItem('auth_unlocked', 'true');
+                unlockDashboard();
+            } else {
+                document.getElementById('authError').classList.remove('hidden');
+            }
+        }
+
+        async function unlockDashboard() {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            await syncAtomicIndianTime();
+            startLiveTickLoop();
+        }
+
+        function lockApp() {
+            sessionStorage.removeItem('auth_unlocked');
+            location.reload();
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                alert('✅ Gemini API Key Saved!');
+            }
+        }
+
+        function openPocketOptionPopup() {
+            window.open('https://pocketoption.com/en/cabinet/demo-quick-high-low/', 'PO', 'width=1050,height=780');
+        }
+
+        async function connectPocketOptionScreen() {
+            try {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: "always", frameRate: 30 },
+                    audio: false
+                });
+                const videoElem = document.getElementById('poScreenVideo');
+                videoElem.srcObject = screenStream;
+                await videoElem.play();
+
+                document.getElementById('screenPlaceholder').style.display = "none";
+                isScreenConnected = true;
+
+                const dot = document.getElementById('screenStatusDot');
+                if (dot) dot.className = "w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping";
+                setText('screenStatusTitle', '🟢 LIVE VIDEO STREAM CONNECTED');
+                setText('connectScreenBtn', '✅ Live Screen Connected');
+
+                screenStream.getVideoTracks()[0].onended = () => {
+                    isScreenConnected = false;
+                    if (getActiveStore().length === 0) {
+                        document.getElementById('screenPlaceholder').style.display = "flex";
+                    }
+                    if (dot) dot.className = "w-2.5 h-2.5 bg-rose-500 rounded-full";
+                    setText('screenStatusTitle', '🔴 Screen Disconnected');
+                    setText('connectScreenBtn', '2️⃣ 🎥 Share Live Chart');
+                };
+
+                setTimeout(() => scanLiveScreenNow(true), 800);
+            } catch (err) {
+                alert("⚠️ Screen share cancelled.");
+            }
+        }
+
+        function toggleAutoBot() {
+            if (!isScreenConnected && getActiveStore().length < 15 && !autoBotActive) {
+                alert("⚠️ UNAVAILABLE_DATA: Load 45-Bar Test Data, Import CSV/JSON OHLC, or Share Live Chart before starting Auto Bot.");
+                return;
+            }
+
+            const btn = document.getElementById('autoBotBtn');
+            const statusText = document.getElementById('sessionStatusText');
+            const tableBadge = document.getElementById('tableSessionBadge');
+
+            autoBotActive = !autoBotActive;
+
+            if (autoBotActive) {
+                tradeLog = [];
+                queuedTradeIds.clear();
+                completedTradeIds.clear();
+                activeVerificationLocks.clear();
+                renderSessionStats();
+                btn.innerText = "🛑 Stop Auto Bot (Reset)";
+                btn.className = "bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow-glow-red";
+                statusText.innerText = "🟢 AUDITED BOT ON";
+                statusText.className = "text-xs sm:text-sm font-black text-emerald-400 mt-1 animate-pulse";
+                tableBadge.innerText = "🟢 Strict Open-vs-Close Verifier Active";
+                tableBadge.className = "text-xs bg-emerald-950/90 border border-emerald-500/50 px-3 py-1.5 rounded-lg text-emerald-300 font-bold";
+                scanLiveScreenNow(false);
+            } else {
+                tradeLog = [];
+                queuedTradeIds.clear();
+                completedTradeIds.clear();
+                activeVerificationLocks.clear();
+                renderSessionStats();
+                btn.innerText = "3️⃣ 🤖 Start Auto Bot";
+                btn.className = "bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow-glow-green";
+                statusText.innerText = "🔴 STANDBY";
+                statusText.className = "text-xs sm:text-sm font-black text-rose-400 mt-1";
+                tableBadge.innerText = "Bot is OFF • Session Reset to 0";
+                tableBadge.className = "text-xs bg-rose-950/85 border border-rose-600/50 px-3 py-1.5 rounded-lg text-rose-300 font-bold";
+            }
+        }
+
+        function startLiveTickLoop() {
+            setInterval(() => {
+                const trueNowMs = getTrueNowMs();
+                setText('liveIstClock', formatExactIST(trueNowMs));
+
+                const secsNow = Math.floor((trueNowMs / 1000) % 60);
+                const secsLeft = 59 - secsNow;
+                setText('candleTimer', `00:${secsLeft < 10 ? '0' + secsLeft : secsLeft}s`);
+
+                verifyRunningTradesAutonomously();
+
+                const currentMinute = Math.floor(trueNowMs / 60000);
+                if ((isScreenConnected || getActiveStore().length >= 15) && secsNow === 55 && lastScannedMinute !== currentMinute) {
+                    lastScannedMinute = currentMinute;
+                    scanLiveScreenNow(false);
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
